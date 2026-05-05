@@ -9,7 +9,6 @@ const EMPTY_FORM = {
   name: '', 
   contactNo: '', 
   gmail: '', 
-  employeeCode: '', 
   designation: '', 
   userId: '', 
   pass: '', 
@@ -41,16 +40,15 @@ export default function Setting() {
           .filter(r => r[1] && String(r[1]).startsWith('SN-'))
           .map((r, idx) => ({
             _rowIndex: idx + 2,
-            timestamp: String(r[0] || ''), 
-            serialNo: String(r[1] || ''),
-            name: String(r[2] || ''), 
-            contactNo: String(r[3] || ''),
-            gmail: String(r[4] || ''), 
-            employeeCode: String(r[5] || ''),
-            designation: String(r[6] || ''), 
-            userId: String(r[7] || ''),
-            pass: String(r[8] || ''), 
-            role: String(r[9] || 'User'),
+            timestamp: String(r[0] || ''),  // A
+            serialNo:  String(r[1] || ''),  // B
+            name:      String(r[2] || ''),  // C
+            contactNo: String(r[3] || ''),  // D
+            gmail:     String(r[4] || ''),  // E
+            designation: String(r[5] || ''), // F
+            userId:    String(r[6] || ''),  // G — Login ID
+            pass:      String(r[7] || ''),  // H
+            role:      String(r[8] || 'User'), // I
           }));
         setUsers(list);
       }
@@ -72,14 +70,13 @@ export default function Setting() {
   const openEdit = (u) => {
     setEditUser(u);
     setFormData({ 
-      name: u.name, 
-      contactNo: u.contactNo, 
-      gmail: u.gmail, 
-      employeeCode: u.employeeCode, 
+      name:        u.name, 
+      contactNo:   u.contactNo, 
+      gmail:       u.gmail, 
       designation: u.designation, 
-      userId: u.userId, 
-      pass: u.pass, 
-      role: u.role 
+      userId:      u.userId, 
+      pass:        u.pass, 
+      role:        u.role 
     });
     setShowFormModal(true);
   };
@@ -101,7 +98,8 @@ export default function Setting() {
 
       let body;
       if (editUser) {
-        const rowData = ['', '', formData.name, formData.contactNo, formData.gmail, formData.employeeCode, formData.designation, formData.userId, formData.pass, formData.role];
+        // A=ts(keep), B=sn(keep), C=Name, D=Contact, E=Gmail, F=Desig, G=LoginID, H=Pass, I=Role
+        const rowData = ['', '', formData.name, formData.contactNo, formData.gmail, formData.designation, formData.userId, formData.pass, formData.role];
         body = new URLSearchParams({ 
           action: 'update', 
           sheetName: LOGIN_SHEET, 
@@ -110,7 +108,8 @@ export default function Setting() {
         });
       } else {
         const sn = `SN-${String(users.length + 1).padStart(3, '0')}`;
-        const rowData = [ts, sn, formData.name, formData.contactNo, formData.gmail, formData.employeeCode, formData.designation, formData.userId, formData.pass, formData.role];
+        // A=ts, B=sn, C=Name, D=Contact, E=Gmail, F=Desig, G=LoginID, H=Pass, I=Role
+        const rowData = [ts, sn, formData.name, formData.contactNo, formData.gmail, formData.designation, formData.userId, formData.pass, formData.role];
         body = new URLSearchParams({ 
           action: 'insert', 
           sheetName: LOGIN_SHEET, 
@@ -433,17 +432,6 @@ export default function Setting() {
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
                       value={formData.gmail} 
                       onChange={e => setFormData({ ...formData, gmail: e.target.value })} 
-                    />
-                  </div>
-                  <div className="space-y-1 sm:space-y-1.5">
-                    <label className="text-xs sm:text-sm text-slate-600">Employee Code</label>
-                    <input 
-                      required 
-                      type="text" 
-                      placeholder="Code"
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                      value={formData.employeeCode} 
-                      onChange={e => setFormData({ ...formData, employeeCode: e.target.value })} 
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">

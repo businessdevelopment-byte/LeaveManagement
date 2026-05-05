@@ -75,10 +75,10 @@ export default function LeaveRequest() {
   const isAdmInit = currentUser?.role === 'ADMIN';
   const [formData, setFormData] = useState({
     type: 'Leave Request',
-    userName: isAdmInit ? '' : (currentUser?.name || ''),
-    employeeId: isAdmInit ? '' : (currentUser?.employeeCode || ''),
-    designation: isAdmInit ? '' : (currentUser?.designation || ''),
-    mobile: isAdmInit ? '' : (currentUser?.mobile || ''),
+    userName:    isAdmInit ? '' : (currentUser?.name        || ''), // Column C
+    employeeId:  isAdmInit ? '' : (currentUser?.employeeCode || ''), // Column G
+    designation: isAdmInit ? '' : (currentUser?.designation  || ''), // Column F
+    mobile:      isAdmInit ? '' : (currentUser?.mobile        || ''), // Column D
     fromDate: '',
     toDate: '',
     date: '',
@@ -114,12 +114,13 @@ export default function LeaveRequest() {
         const reqs = [];
 
         rows.forEach((r, idx) => {
-          // Column O = index 14 (Submission), Column P = index 15 (Approval Timestamp)
-          const colO = String(r[14] || '').trim();
-          const colP = String(r[15] || '').trim();
+          // Column B (index 1) = SN — present means row was submitted
+          // Column P (index 15) = Approval Timestamp — set by backend on approval
+          const hasSN = String(r[1] || '').trim() !== '';
+          const colP  = String(r[15] || '').trim();
 
-          const isPending = colO !== '' && colP === '';
-          const isHistory = colO !== '' && colP !== '';
+          const isPending = hasSN && colP === '';
+          const isHistory = hasSN && colP !== '';
 
           if (isPending || isHistory) {
             reqs.push({
@@ -140,11 +141,11 @@ export default function LeaveRequest() {
               proofUrl: String(r[13] || ''), // N
               status: isPending ? 'PENDING' : String(r[17] || ''), // R
               approverRemarks: String(r[19] || ''), // T
-              approvedName: String(r[20] || '') // U
+              approvedName: String(r[18] || '')     // S — Approver name
             });
           }
         });
-        setRequests(reqs.reverse());
+        setRequests(reqs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
       }
     } catch (e) {
       console.error(e);
@@ -158,31 +159,30 @@ export default function LeaveRequest() {
     if (masterData.employees.length > 0) return;
     try {
       const scriptUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT;
-      const sheetName = 'Master';
-      const res = await fetch(`${scriptUrl}?sheet=${sheetName}`);
+      const res = await fetch(`${scriptUrl}?sheet=${import.meta.env.VITE_LOGIN_SHEET || 'Login'}`);
       const json = await res.json();
 
       if (json.success) {
+        // Skip header row (index 0)
         const rows = json.data.slice(1);
         const emps = [];
         const mgrs = [];
 
         rows.forEach(r => {
-          // Employee: A(0)=ID, B(1)=Name, C(2)=Desig, D(3)=Mobile
-          const empId = String(r[0] || '').trim();
-          const empName = String(r[1] || '').trim();
-          const empDesig = String(r[2] || '').trim();
-          const empMobile = String(r[3] || '').trim();
+          const empName  = String(r[2] || '').trim(); // C — Full Name
+          const empMobile= String(r[3] || '').trim(); // D — Mobile
+          const empDesig = String(r[5] || '').trim(); // F — Designation
+          const empId    = String(r[6] || '').trim(); // G — Employee ID (Login ID)
+          const role     = String(r[8] || '').trim(); // I — Role
 
-          // Manager: F(5)=Name, G(6)=ID
-          const mgrName = String(r[5] || '').trim();
-          const mgrId = String(r[6] || '').trim();
-
+          // All employees for the Name dropdown
           if (empName && empId) {
             emps.push({ id: empId, name: empName, designation: empDesig, mobile: empMobile });
           }
-          if (mgrName && mgrId) {
-            mgrs.push({ name: mgrName, id: mgrId });
+
+          // Managers: only rows where Role (Col I) = 'Admin' (case-insensitive)
+          if (empName && role.toLowerCase() === 'admin') {
+            mgrs.push({ name: empName, id: empMobile }); // name = Col C, id = Col D (mobile/number)
           }
         });
 
@@ -236,29 +236,47 @@ export default function LeaveRequest() {
   }, [formData.fromDate, formData.toDate, formData.type]);
 
   // Filtering Logic
+  const isAdmin = String(currentUser?.role || '').toUpperCase() === 'ADMIN';
+
+  // For regular users: match their own employee code (or name as fallback)
+  const matchesCurrentUser = (r) => {
+    const userCode = String(currentUser?.employeeCode || '').trim().toLowerCase();
+    const userName = String(currentUser?.name || '').trim().toLowerCase();
+    const reqCode  = String(r.employeeId || '').trim().toLowerCase();
+    const reqName  = String(r.name || '').trim().toLowerCase();
+    if (userCode && reqCode) return reqCode === userCode;
+    if (userName && reqName) return reqName === userName;
+    return false;
+  };
+
+  // For admins: match rows where manager name (Data Col K) = admin name (Login Col C)
+  //             AND manager number (Data Col L) = admin mobile (Login Col D)
+  const matchesAdminAsManager = (r) => {
+    const adminName   = String(currentUser?.name   || '').trim().toLowerCase();
+    const adminMobile = String(currentUser?.mobile  || '').trim().toLowerCase();
+    const reqMgrName  = String(r.manager   || '').trim().toLowerCase();
+    const reqMgrId    = String(r.managerId || '').trim().toLowerCase();
+    // Both must match
+    return adminName && adminMobile
+      ? reqMgrName === adminName && reqMgrId === adminMobile
+      : adminName
+      ? reqMgrName === adminName   // fallback: name only
+      : false;
+  };
+
   const pendingRequests = useMemo(() => {
     return requests.filter(r => {
       if (r.status !== 'PENDING') return false;
-      if (currentUser?.role !== 'ADMIN') {
-        const userCode = String(currentUser?.employeeCode || '').trim().toLowerCase();
-        const reqCode = String(r.employeeId || '').trim().toLowerCase();
-        return reqCode === userCode;
-      }
-      return true;
+      return isAdmin ? matchesAdminAsManager(r) : matchesCurrentUser(r);
     });
-  }, [requests, currentUser]);
+  }, [requests, currentUser, isAdmin]);
 
   const historyRequests = useMemo(() => {
     return requests.filter(r => {
       if (r.status === 'PENDING') return false;
-      if (currentUser?.role !== 'ADMIN') {
-        const userCode = String(currentUser?.employeeCode || '').trim().toLowerCase();
-        const reqCode = String(r.employeeId || '').trim().toLowerCase();
-        return reqCode === userCode;
-      }
-      return true;
+      return isAdmin ? matchesAdminAsManager(r) : matchesCurrentUser(r);
     });
-  }, [requests, currentUser]);
+  }, [requests, currentUser, isAdmin]);
 
 
   const displayRequests = useMemo(() => {
@@ -331,8 +349,7 @@ export default function LeaveRequest() {
         sn: id,
         status: draftStatuses[id] || 'APPROVED',
         remarks: draftRemarks[id] || '',
-        approvedBy: currentUser?.employeeCode || '',
-        approvedName: currentUser?.userName || '',
+        approvedBy: currentUser?.name || '',  // Column S — Admin's real name (Login Col C)
         from: dates?.from,
         to: dates?.to,
         days: dates?.days
@@ -397,10 +414,10 @@ export default function LeaveRequest() {
     const isAdm = currentUser?.role === 'ADMIN';
     setFormData({
       type: 'Leave Request',
-      userName: isAdm ? '' : (currentUser?.name || ''),
-      employeeId: isAdm ? '' : (currentUser?.employeeCode || ''),
-      designation: isAdm ? '' : (currentUser?.designation || ''),
-      mobile: isAdm ? '' : (currentUser?.mobile || ''),
+      userName:    isAdm ? '' : (currentUser?.name        || ''), // Column C
+      employeeId:  isAdm ? '' : (currentUser?.employeeCode || ''), // Column G
+      designation: isAdm ? '' : (currentUser?.designation  || ''), // Column F
+      mobile:      isAdm ? '' : (currentUser?.mobile        || ''), // Column D
       fromDate: '',
       toDate: '',
       date: '',
@@ -483,10 +500,10 @@ export default function LeaveRequest() {
       }
 
       // Column B (Index 1) is left empty; the Apps Script will generate the next unique SN
+      // Columns A–N only; Column O is NOT written by the frontend
       const newRequestRow = [
         ts, '', formData.type, formData.employeeId, formData.userName, formData.designation, formData.mobile,
-        finalFrom, finalTo, finalDays, formData.manager, formData.managerId, formData.remarks, fileUrl,
-        ts
+        finalFrom, finalTo, finalDays, formData.manager, formData.managerId, formData.remarks, fileUrl
       ];
 
 
@@ -530,8 +547,10 @@ export default function LeaveRequest() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
 
-      toast.success('System Synced');
+      toast.success('Request Submitted Successfully');
+      setActiveTab('pending'); // Auto-switch to pending to see the new request
       fetchRequests(); // Sync final server data
+
     } catch (err) {
       console.error(err);
       toast.error('Sync failed');
@@ -763,8 +782,9 @@ export default function LeaveRequest() {
                   </div>
 
                   {/* Admin Edit Controls (Selected Only) */}
-                  {activeTab === 'pending' && currentUser?.role === 'ADMIN' && selectedRows.includes(req.id) && (
+                  {activeTab === 'pending' && isAdmin && selectedRows.includes(req.id) && (
                     <div className="mt-3 pt-3 border-t-2 border-dashed border-sky-100 flex flex-col gap-2 bg-sky-50/30 -mx-2.5 -mb-2.5 p-2.5 rounded-b-lg">
+                      {/* Status + Remarks */}
                       <div className="flex gap-2">
                         <select value={draftStatuses[req.id] || ''} onChange={(e) => setDraftStatuses(prev => ({ ...prev, [req.id]: e.target.value }))} className="flex-1 text-[11px] font-medium border border-sky-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 h-9">
                           <option value="">Set Status</option>
@@ -773,20 +793,41 @@ export default function LeaveRequest() {
                         </select>
                         <input type="text" placeholder="Approver remarks..." value={draftRemarks[req.id] || ''} onChange={(e) => setDraftRemarks(prev => ({ ...prev, [req.id]: e.target.value }))} className="flex-[2] text-[11px] border border-sky-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 h-9 bg-white font-medium" />
                       </div>
-                      <div className="flex gap-2 items-center">
-                        <div className="flex-1 flex flex-col">
-                          <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Edit From</span>
-                          <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+
+                      {/* Date Fields — adaptive by request type */}
+                      {(req.type === 'Leave Request' || req.type === 'WFH Request') ? (
+                        /* Leave / WFH → From + To + Days */
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1 flex flex-col">
+                            <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">From Date</span>
+                            <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+                          </div>
+                          <div className="flex-1 flex flex-col">
+                            <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">To Date</span>
+                            <input type="date" value={toInputDate(draftDates[req.id]?.to)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+                          </div>
+                          <div className="w-14 flex flex-col">
+                            <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Days</span>
+                            <input type="text" value={draftDates[req.id]?.days || ''} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], days: e.target.value } }))} className="h-8 text-[11px] border border-sky-100 rounded-md text-center font-semibold" />
+                          </div>
                         </div>
-                        <div className="flex-1 flex flex-col">
-                          <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Edit To</span>
-                          <input type="date" value={toInputDate(draftDates[req.id]?.to)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+                      ) : (
+                        /* Punchmiss / Weekoff → single Date only */
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1 flex flex-col">
+                            <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Date</span>
+                            <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+                          </div>
+                          <div className="flex-1 flex flex-col">
+                            <span className="text-[7px] text-slate-400 font-semibold uppercase mb-0.5">To</span>
+                            <div className="h-8 flex items-center px-2 text-[11px] text-slate-400 italic bg-slate-50 border border-slate-100 rounded-md">—</div>
+                          </div>
+                          <div className="w-14 flex flex-col">
+                            <span className="text-[7px] text-slate-400 font-semibold uppercase mb-0.5">Days</span>
+                            <div className="h-8 flex items-center justify-center text-[11px] text-slate-400 italic bg-slate-50 border border-slate-100 rounded-md">—</div>
+                          </div>
                         </div>
-                        <div className="w-12 flex flex-col">
-                          <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Days</span>
-                          <input type="text" value={draftDates[req.id]?.days || ''} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], days: e.target.value } }))} className="h-8 text-[11px] border border-sky-100 rounded-md text-center font-semibold" />
-                        </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -855,18 +896,41 @@ export default function LeaveRequest() {
                       <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.designation}</td>
                       <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.mobile}</td>
                       <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
-                        {activeTab === 'pending' && selectedRows.includes(req.id) && currentUser?.role === 'ADMIN' ? (
-                          <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))} className="w-[110px] px-2 py-1 text-[11px] border border-sky-200 rounded focus:border-sky-500" />
+                        {activeTab === 'pending' && selectedRows.includes(req.id) && isAdmin ? (
+                          <input
+                            type="date"
+                            value={toInputDate(draftDates[req.id]?.from)}
+                            onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))}
+                            className="w-[110px] px-2 py-1 text-[11px] border border-sky-200 rounded focus:border-sky-500"
+                          />
                         ) : formatUIDate(req.from)}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
-                        {activeTab === 'pending' && selectedRows.includes(req.id) && currentUser?.role === 'ADMIN' ? (
-                          <input type="date" value={toInputDate(draftDates[req.id]?.to)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value.split('-').reverse().join('/') } }))} className="w-[110px] px-2 py-1 text-[11px] border border-sky-200 rounded focus:border-sky-500" />
+                        {activeTab === 'pending' && selectedRows.includes(req.id) && isAdmin ? (
+                          (req.type === 'Leave Request' || req.type === 'WFH Request') ? (
+                            <input
+                              type="date"
+                              value={toInputDate(draftDates[req.id]?.to)}
+                              onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value.split('-').reverse().join('/') } }))}
+                              className="w-[110px] px-2 py-1 text-[11px] border border-sky-200 rounded focus:border-sky-500"
+                            />
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">—</span>
+                          )
                         ) : formatUIDate(req.to)}
                       </td>
                       <td className="px-4 py-3 text-center text-sm text-sky-600 whitespace-nowrap">
-                        {activeTab === 'pending' && selectedRows.includes(req.id) && currentUser?.role === 'ADMIN' ? (
-                          <input type="text" value={draftDates[req.id]?.days || ''} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], days: e.target.value } }))} className="w-12 px-2 py-1 text-[11px] text-center border border-sky-200 rounded" />
+                        {activeTab === 'pending' && selectedRows.includes(req.id) && isAdmin ? (
+                          (req.type === 'Leave Request' || req.type === 'WFH Request') ? (
+                            <input
+                              type="text"
+                              value={draftDates[req.id]?.days || ''}
+                              onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], days: e.target.value } }))}
+                              className="w-12 px-2 py-1 text-[11px] text-center border border-sky-200 rounded"
+                            />
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">—</span>
+                          )
                         ) : req.days}
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-400 italic max-w-xs truncate whitespace-nowrap">{req.remarks}</td>

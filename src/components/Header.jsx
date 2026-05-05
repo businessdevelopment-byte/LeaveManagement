@@ -27,13 +27,11 @@ const Header = ({ onMenuClick, user }) => {
           <div className="flex items-center gap-3 pl-2 group cursor-pointer">
             <div className="text-right pr-2">
               <p className="text-sm font-semibold text-gray-900 group-hover:text-sky-600 transition-colors leading-tight">
-                {user?.name || 'Admin'}
+                {user?.name || 'User'}
               </p>
-              {user?.designation && (
-                <p className="text-[11px] font-medium text-slate-500 leading-tight">
-                  {user.designation}
-                </p>
-              )}
+              <p className="text-[11px] font-medium text-slate-500 leading-tight">
+                ID: {user?.username || user?.employeeCode || '—'}
+              </p>
               <p className="text-[10px] uppercase font-bold text-sky-600 tracking-wider mt-0.5">
                 {user?.role}
               </p>

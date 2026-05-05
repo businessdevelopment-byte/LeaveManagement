@@ -67,23 +67,22 @@ const Login = () => {
       // Skip header row (i = 1)
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
-        const rowName = String(row[2] || '').trim(); // C
-        const rowMobile = String(row[3] || '').trim(); // D
-        const rowCode = String(row[5] || '').trim(); // F
-        const rowDesignation = String(row[6] || '').trim(); // G
-        const rowId = String(row[7] || '').trim(); // H
-        const rowPass = String(row[8] || '').trim(); // I
-        const rowRole = String(row[9] || '').trim(); // J
+        const rowName        = String(row[2] || '').trim(); // C — Name
+        const rowMobile      = String(row[3] || '').trim(); // D — Mobile
+        const rowDesignation = String(row[5] || '').trim(); // F — Designation
+        const rowLoginId     = String(row[6] || '').trim(); // G — Login ID
+        const rowPass        = String(row[7] || '').trim(); // H — Password
+        const rowRole        = String(row[8] || '').trim(); // I — Role
 
-        // Check if ID matches Code (F) or ID (H) AND Pass matches (I)
-        if ((id === rowCode || id === rowId) && password === rowPass) {
+        // Match: Login ID = Column G, Password = Column H
+        if (id === rowLoginId && password === rowPass) {
           matchedUser = {
-            name: rowName,
-            username: id,
-            role: rowRole.toUpperCase(),
-            designation: rowDesignation,
-            employeeCode: rowCode,
-            mobile: rowMobile
+            name:         rowName,
+            username:     rowLoginId,     // shown as ID in header
+            employeeCode: rowLoginId,     // used for leave request filtering
+            mobile:       rowMobile,      // pre-fill form
+            designation:  rowDesignation, // pre-fill form
+            role:         rowRole.toUpperCase(),
           };
           break;
         }
