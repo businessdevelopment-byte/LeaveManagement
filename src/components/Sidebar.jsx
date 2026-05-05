@@ -24,7 +24,6 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const adminMenuItems = [
     { path: '/leave-request', icon: Plus, label: 'Leave Request' },
-    { path: '/approval', icon: CheckCircle, label: 'Approval' },
     { path: '/setting', icon: Settings, label: 'Setting' },
   ];
 

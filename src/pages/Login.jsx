@@ -120,7 +120,7 @@ const Login = () => {
 
           <div className="flex flex-col items-center space-y-2">
             <div className="text-center space-y-2">
-              <h1 className="text-4xl font-bold text-gray-900">Leave</h1>
+              <h1 className="text-4xl font-semibold text-gray-900">Leave</h1>
               <p className="text-gray-600 text-base font-medium">Management System</p>
             </div>
           </div>
@@ -129,7 +129,7 @@ const Login = () => {
           <form className="space-y-4" onSubmit={handleSubmit}>
             {/* User ID Input */}
             <div className="space-y-2">
-              <label htmlFor="id" className="text-sm font-semibold text-gray-700">
+              <label htmlFor="id" className="text-sm font-medium text-gray-700">
                 User ID
               </label>
               <div className="relative">
@@ -151,7 +151,7 @@ const Login = () => {
 
             {/* Password Input */}
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-semibold text-gray-700">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Password
               </label>
               <div className="relative">
@@ -186,7 +186,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={submitting}
-              className={`w-full py-3 px-4 text-base font-bold bg-sky-600 text-white rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-600 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : ''
+              className={`w-full py-3 px-4 text-base font-semibold bg-sky-600 text-white rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-600 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
             >
               {submitting ? (
