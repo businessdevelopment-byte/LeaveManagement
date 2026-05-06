@@ -991,9 +991,9 @@ export default function LeaveRequest() {
       {/* Request Form Modal */}
       {showFormModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center z-[100] p-3 md:p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg max-h-[85dvh] md:max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-300">
+          <div className="bg-white w-full max-w-lg max-h-[90dvh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-300">
             {/* Sticky Header */}
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+            <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
               <div className="flex flex-col">
                 <h2 className="text-[13px] font-semibold text-slate-800 uppercase tracking-tighter leading-none">{formData.type}</h2>
                 <span className="text-[9px] text-slate-400 font-medium uppercase tracking-widest mt-1">Application Form</span>
@@ -1001,8 +1001,8 @@ export default function LeaveRequest() {
               <button onClick={resetFormAndClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"><X size={20} /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3.5 scrollbar-hide">
-              <form id="leaveForm" onSubmit={handleSubmit} className="space-y-3">
+            <div className="flex-1 overflow-y-auto p-3 scrollbar-hide">
+              <form id="leaveForm" onSubmit={handleSubmit} className="space-y-2">
                 {/* Request Type */}
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Request Type</label>
@@ -1016,7 +1016,7 @@ export default function LeaveRequest() {
                 </div>
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
                     <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Full Name</label>
                     {isAdmInit ? (
@@ -1087,7 +1087,7 @@ export default function LeaveRequest() {
                     required
                     value={formData.remarks}
                     onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-                    rows="2"
+                    rows="2" style={{minHeight:'44px'}}
                     className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 resize-none bg-white"
                   />
                 </div>
@@ -1099,7 +1099,7 @@ export default function LeaveRequest() {
                     <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest px-0.5">Proof Attachment</label>
                     <div
                       onClick={() => fileInputRef.current.click()}
-                      className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-sky-50 hover:border-sky-200 transition-all group bg-white"
+                      className="border-2 border-dashed border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-sky-50 hover:border-sky-200 transition-all group bg-white"
                     >
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                       {formData.proofPreview ? (
@@ -1125,11 +1125,11 @@ export default function LeaveRequest() {
             </div>
 
             {/* Sticky Footer Actions */}
-            <div className="px-5 py-4 border-t border-slate-100 bg-white flex gap-3 shrink-0">
+            <div className="px-4 py-2.5 border-t border-slate-100 bg-white flex gap-3 shrink-0">
               <button
                 type="button"
                 onClick={resetFormAndClose}
-                className="flex-1 px-4 py-3 bg-slate-50 text-slate-500 font-semibold rounded-xl hover:bg-slate-100 transition-all text-[11px] uppercase tracking-widest"
+                className="flex-1 px-4 py-2 bg-slate-50 text-slate-500 font-semibold rounded-xl hover:bg-slate-100 transition-all text-[11px] uppercase tracking-widest"
               >
                 Cancel
               </button>
@@ -1137,7 +1137,7 @@ export default function LeaveRequest() {
                 form="leaveForm"
                 type="submit"
                 disabled={loading}
-                className="flex-[2] px-4 py-3 bg-sky-600 text-white font-semibold rounded-xl hover:bg-sky-700 shadow-lg shadow-sky-600/20 active:scale-[0.98] transition-all text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-[2] px-4 py-2 bg-sky-600 text-white font-semibold rounded-xl hover:bg-sky-700 shadow-lg shadow-sky-600/20 active:scale-[0.98] transition-all text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
