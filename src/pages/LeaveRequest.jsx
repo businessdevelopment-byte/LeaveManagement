@@ -49,8 +49,129 @@ const toInputDate = (dateStr) => {
   return '';
 };
 
+// Reusable Searchable Select Component
+const SearchableSelect = ({ options, value, onChange, placeholder, className, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [openUp, setOpenUp] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleToggle = () => {
+    if (disabled) return;
+    if (!isOpen) {
+      if (wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        // If bottom of the dropdown (approx 300px) would exceed viewport, or if it's in the bottom 40% of screen
+        const spaceBelow = viewportHeight - rect.bottom;
+        const wouldFitBelow = spaceBelow > 280; 
+        const spaceAbove = rect.top;
+        
+        setOpenUp(!wouldFitBelow && spaceAbove > spaceBelow);
+      }
+    }
+    setIsOpen(!isOpen);
+  };
+
+  const filteredOptions = options.filter(opt =>
+    String(opt.label || opt).toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedOption = options.find(opt => (opt.value || opt) === value);
+
+  return (
+    <div className={`relative ${className}`} ref={wrapperRef}>
+      <div
+        onClick={handleToggle}
+        className={`w-full border border-slate-200 rounded-lg px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all ${disabled ? 'bg-slate-50 cursor-not-allowed opacity-60' : 'bg-white hover:border-sky-400'}`}
+      >
+        <span className={!selectedOption ? 'text-slate-400' : 'text-slate-700'}>
+          {selectedOption ? (selectedOption.label || selectedOption) : placeholder}
+        </span>
+        <ChevronDown size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+
+      {isOpen && (
+        <div className={`absolute z-[110] left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden animate-in fade-in duration-200 ${openUp ? 'bottom-full mb-1 slide-in-from-bottom-1' : 'top-full mt-1 slide-in-from-top-1'}`}>
+          {/* Search bar at top if opening down, at bottom if opening up */}
+          {!openUp && (
+            <div className="p-2 border-b border-slate-100 bg-slate-50/50">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-7 pr-3 py-1.5 text-[11px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="max-h-40 overflow-y-auto py-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt, i) => {
+                const val = opt.value || opt;
+                const lab = opt.label || opt;
+                return (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      onChange({ target: { value: val } });
+                      setIsOpen(false);
+                      setSearch('');
+                    }}
+                    className={`px-3 py-2 text-xs cursor-pointer hover:bg-sky-50 transition-colors ${val === value ? 'bg-sky-100/50 text-sky-700 font-medium' : 'text-slate-600'}`}
+                  >
+                    {lab}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="px-3 py-4 text-xs text-slate-400 text-center italic">No results found</div>
+            )}
+          </div>
+
+          {openUp && (
+            <div className="p-2 border-t border-slate-100 bg-slate-50/50">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-7 pr-3 py-1.5 text-[11px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function LeaveRequest() {
   const { user: currentUser } = useAuthStore();
+  const userRole = String(currentUser?.role || '').toUpperCase();
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER ADMIN';
+  const isSuperAdmin = userRole === 'SUPER ADMIN';
   const fileInputRef = useRef(null);
 
   const [requests, setRequests] = useState([]);
@@ -72,7 +193,7 @@ export default function LeaveRequest() {
 
   const [masterData, setMasterData] = useState({ employees: [], managers: [] });
 
-  const isAdmInit = currentUser?.role === 'ADMIN';
+  const isAdmInit = isAdmin;
   const [formData, setFormData] = useState({
     type: 'Leave Request',
     userName:    isAdmInit ? '' : (currentUser?.name        || ''), // Column C
@@ -95,7 +216,8 @@ export default function LeaveRequest() {
     fromDate: '',
     toDate: '',
     type: '',
-    manager: ''
+    manager: '',
+    employeeName: ''
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -180,8 +302,9 @@ export default function LeaveRequest() {
             emps.push({ id: empId, name: empName, designation: empDesig, mobile: empMobile });
           }
 
-          // Managers: only rows where Role (Col I) = 'Admin' (case-insensitive)
-          if (empName && role.toLowerCase() === 'admin') {
+          // Managers: only rows where Role (Col I) is 'Admin' or 'Super Admin'
+          const lowerRole = role.toLowerCase();
+          if (empName && (lowerRole === 'admin' || lowerRole === 'super admin')) {
             mgrs.push({ name: empName, id: empMobile }); // name = Col C, id = Col D (mobile/number)
           }
         });
@@ -236,7 +359,7 @@ export default function LeaveRequest() {
   }, [formData.fromDate, formData.toDate, formData.type]);
 
   // Filtering Logic
-  const isAdmin = String(currentUser?.role || '').toUpperCase() === 'ADMIN';
+  // Filtering Logic (isAdmin and isSuperAdmin defined at top)
 
   // For regular users: match their own employee code (or name as fallback)
   const matchesCurrentUser = (r) => {
@@ -267,16 +390,18 @@ export default function LeaveRequest() {
   const pendingRequests = useMemo(() => {
     return requests.filter(r => {
       if (r.status !== 'PENDING') return false;
-      return isAdmin ? matchesAdminAsManager(r) : matchesCurrentUser(r);
+      if (isSuperAdmin) return true;
+      return (isAdmin && matchesAdminAsManager(r)) || matchesCurrentUser(r);
     });
-  }, [requests, currentUser, isAdmin]);
+  }, [requests, currentUser, isAdmin, isSuperAdmin]);
 
   const historyRequests = useMemo(() => {
     return requests.filter(r => {
       if (r.status === 'PENDING') return false;
-      return isAdmin ? matchesAdminAsManager(r) : matchesCurrentUser(r);
+      if (isSuperAdmin) return true;
+      return (isAdmin && matchesAdminAsManager(r)) || matchesCurrentUser(r);
     });
-  }, [requests, currentUser, isAdmin]);
+  }, [requests, currentUser, isAdmin, isSuperAdmin]);
 
 
   const displayRequests = useMemo(() => {
@@ -286,6 +411,8 @@ export default function LeaveRequest() {
       if (q && !req.sn.toLowerCase().includes(q) && !req.name.toLowerCase().includes(q) && !req.type.toLowerCase().includes(q)) return false;
       if (filters.type && req.type !== filters.type) return false;
       if (filters.fromDate && req.from < filters.fromDate) return false;
+      if (filters.employeeName && req.name !== filters.employeeName) return false;
+      if (filters.manager && req.manager !== filters.manager) return false;
       return true;
     });
   }, [activeTab, filters, pendingRequests, historyRequests]);
@@ -299,14 +426,18 @@ export default function LeaveRequest() {
 
   const handleSelectAll = (e) => {
     const isChecked = e.target.checked;
-    const pageIds = paginatedRequests.map(r => r.id);
+    const pageIds = paginatedRequests
+      .filter(r => !matchesCurrentUser(r)) // Cannot select self
+      .map(r => r.id);
     if (isChecked) {
       setSelectedRows(pageIds);
       const newDraftDates = {};
       const newDraftStatuses = {};
       paginatedRequests.forEach(r => {
-        newDraftDates[r.id] = { from: r.from, to: r.to, days: r.days };
-        newDraftStatuses[r.id] = 'APPROVED';
+        if (!matchesCurrentUser(r)) {
+          newDraftDates[r.id] = { from: r.from, to: r.to, days: r.days };
+          newDraftStatuses[r.id] = 'APPROVED';
+        }
       });
       setDraftDates(newDraftDates);
       setDraftStatuses(newDraftStatuses);
@@ -411,7 +542,7 @@ export default function LeaveRequest() {
   const resetFormAndClose = () => {
     setShowFormModal(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    const isAdm = currentUser?.role === 'ADMIN';
+    const isAdm = userRole === 'ADMIN' || userRole === 'SUPER ADMIN';
     setFormData({
       type: 'Leave Request',
       userName:    isAdm ? '' : (currentUser?.name        || ''), // Column C
@@ -619,7 +750,7 @@ export default function LeaveRequest() {
             >
               <Filter size={15} />
             </button>
-            {activeTab === 'pending' && currentUser?.role === 'ADMIN' && (
+            {activeTab === 'pending' && isAdmin && (
               <button
                 onClick={handleSaveBulk}
                 disabled={selectedRows.length === 0 || isSaving}
@@ -651,35 +782,55 @@ export default function LeaveRequest() {
             onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
             className="w-full lg:w-40 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 h-10 transition-all"
           />
-          <select
+          <SearchableSelect
+            placeholder="All Types"
+            options={REQUEST_TYPES}
             value={filters.type}
             onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-            className="w-full lg:w-48 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 h-10 transition-all cursor-pointer"
-          >
-            <option value="">All Types</option>
-            {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+            className="w-full lg:w-48"
+          />
+
+          {isAdmin && (
+            <SearchableSelect
+              placeholder="All Employees"
+              options={[...new Set((activeTab === 'pending' ? pendingRequests : historyRequests).map(r => r.name).filter(n => n && n.trim() !== ''))].sort()}
+              value={filters.employeeName}
+              onChange={(e) => setFilters({ ...filters, employeeName: e.target.value })}
+              className="w-full lg:w-48"
+            />
+          )}
+
+          {isAdmin && (
+            <SearchableSelect
+              placeholder="All Managers"
+              options={[...new Set((activeTab === 'pending' ? pendingRequests : historyRequests).map(r => r.manager).filter(n => n && n.trim() !== ''))].sort()}
+              value={filters.manager}
+              onChange={(e) => setFilters({ ...filters, manager: e.target.value })}
+              className="w-full lg:w-48"
+            />
+          )}
         </div>
 
         {/* Desktop Buttons */}
         <div className="hidden lg:flex gap-2">
-          {activeTab === 'pending' && currentUser?.role === 'ADMIN' && (
+          {activeTab === 'pending' && isAdmin && (
             <button
               onClick={handleSaveBulk}
               disabled={selectedRows.length === 0 || isSaving}
-              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 h-10 rounded-lg font-medium text-[11px] shadow-sm uppercase tracking-widest disabled:opacity-40 transition-all active:scale-95 flex-shrink-0"
+              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-10 w-10 px-0 rounded-lg font-medium text-[11px] shadow-sm uppercase tracking-widest disabled:opacity-40 transition-all active:scale-95 flex-shrink-0"
+              title="Save Changes"
             >
               {isSaving
                 ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <Save size={15} />}
-              {isSaving ? 'Processing...' : 'Save Changes'}
             </button>
           )}
           <button
             onClick={() => setShowFormModal(true)}
-            className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 h-10 rounded-lg font-medium text-[11px] shadow-sm uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap flex-shrink-0"
+            className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white h-10 w-10 px-0 rounded-lg font-medium text-[11px] shadow-sm uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap flex-shrink-0"
+            title="Create Request"
           >
-            <Plus size={18} /> Create Request
+            <Plus size={18} /> 
           </button>
 
         </div>
@@ -704,8 +855,14 @@ export default function LeaveRequest() {
                   {/* Top Header: Name, SN, Type */}
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                      {activeTab === 'pending' && currentUser?.role === 'ADMIN' && (
-                        <input type="checkbox" checked={selectedRows.includes(req.id)} onChange={() => handleSelectRow(req.id)} className="w-4 h-4 rounded text-sky-600 border-slate-300" />
+                      {activeTab === 'pending' && isAdmin && (
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(req.id)}
+                          onChange={() => handleSelectRow(req.id)}
+                          disabled={matchesCurrentUser(req)}
+                          className={`w-4 h-4 rounded text-sky-600 border-slate-300 ${matchesCurrentUser(req) ? 'opacity-30 cursor-not-allowed' : ''}`}
+                        />
                       )}
                       <div className="flex flex-col">
                         <span className="text-[12px] font-semibold text-slate-800 uppercase leading-tight">{req.name}</span>
@@ -786,11 +943,13 @@ export default function LeaveRequest() {
                     <div className="mt-3 pt-3 border-t-2 border-dashed border-sky-100 flex flex-col gap-2 bg-sky-50/30 -mx-2.5 -mb-2.5 p-2.5 rounded-b-lg">
                       {/* Status + Remarks */}
                       <div className="flex gap-2">
-                        <select value={draftStatuses[req.id] || ''} onChange={(e) => setDraftStatuses(prev => ({ ...prev, [req.id]: e.target.value }))} className="flex-1 text-[11px] font-medium border border-sky-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 h-9">
-                          <option value="">Set Status</option>
-                          <option value="APPROVED">Approve</option>
-                          <option value="REJECTED">Reject</option>
-                        </select>
+                        <SearchableSelect
+                          options={[{ value: 'APPROVED', label: 'Approve' }, { value: 'REJECTED', label: 'Reject' }]}
+                          value={draftStatuses[req.id] || ''}
+                          onChange={(e) => setDraftStatuses(prev => ({ ...prev, [req.id]: e.target.value }))}
+                          placeholder="Set Status"
+                          className="flex-1"
+                        />
                         <input type="text" placeholder="Approver remarks..." value={draftRemarks[req.id] || ''} onChange={(e) => setDraftRemarks(prev => ({ ...prev, [req.id]: e.target.value }))} className="flex-[2] text-[11px] border border-sky-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 h-9 bg-white font-medium" />
                       </div>
 
@@ -873,17 +1032,26 @@ export default function LeaveRequest() {
                 <tbody className="divide-y divide-slate-100">
                   {paginatedRequests.map((req) => (
                     <tr key={req.id} className={`hover:bg-slate-50 transition-colors ${selectedRows.includes(req.id) ? 'bg-sky-50/50' : ''}`}>
-                      {activeTab === 'pending' && currentUser?.role === 'ADMIN' && (
+                      {activeTab === 'pending' && isAdmin && (
                         <>
                           <td className="px-4 py-3 text-center border-r border-slate-100">
-                            <input type="checkbox" checked={selectedRows.includes(req.id)} onChange={() => handleSelectRow(req.id)} className="w-4 h-4 rounded text-sky-600 border-slate-300" />
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.includes(req.id)}
+                              onChange={() => handleSelectRow(req.id)}
+                              disabled={matchesCurrentUser(req)}
+                              className={`w-4 h-4 rounded text-sky-600 border-slate-300 ${matchesCurrentUser(req) ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            />
                           </td>
                           <td className="px-4 py-3 text-center whitespace-nowrap">
-                            <select value={draftStatuses[req.id] || ''} onChange={(e) => setDraftStatuses(prev => ({ ...prev, [req.id]: e.target.value }))} disabled={!selectedRows.includes(req.id)} className={`text-[10px] border rounded px-2 py-1 focus:outline-none ${selectedRows.includes(req.id) ? 'border-sky-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
-                              <option value="">Select</option>
-                              <option value="APPROVED">Approve</option>
-                              <option value="REJECTED">Reject</option>
-                            </select>
+                            <SearchableSelect
+                              options={[{ value: 'APPROVED', label: 'Approve' }, { value: 'REJECTED', label: 'Reject' }]}
+                              value={draftStatuses[req.id] || ''}
+                              onChange={(e) => setDraftStatuses(prev => ({ ...prev, [req.id]: e.target.value }))}
+                              placeholder="Select"
+                              disabled={!selectedRows.includes(req.id)}
+                              className="w-24"
+                            />
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap min-w-[180px]">
                             <input type="text" placeholder="Add remarks..." value={draftRemarks[req.id] || ''} onChange={(e) => setDraftRemarks(prev => ({ ...prev, [req.id]: e.target.value }))} className={`text-[11px] border rounded px-2 py-1 w-full focus:outline-none ${selectedRows.includes(req.id) ? 'border-sky-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-50'}`} disabled={!selectedRows.includes(req.id)} />
@@ -973,9 +1141,13 @@ export default function LeaveRequest() {
             {/* Pagination */}
             <div className="px-4 py-2 border-t border-slate-200 bg-[#f8fafc] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded px-1.5 py-1 text-xs font-medium shadow-sm">
-                  {[10, 15, 20, 50, 100].map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
+                <SearchableSelect
+                  options={[10, 15, 20, 50, 100].map(v => ({ value: v, label: v.toString() }))}
+                  value={itemsPerPage}
+                  onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                  placeholder="Show"
+                  className="w-20"
+                />
                 <span className="text-[12px] font-medium text-slate-500">{((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, displayRequests.length)} of {displayRequests.length}</span>
               </div>
               <div className="flex items-center gap-1">
@@ -1006,13 +1178,12 @@ export default function LeaveRequest() {
                 {/* Request Type */}
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Request Type</label>
-                  <select
+                  <SearchableSelect
+                    options={REQUEST_TYPES}
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-slate-50/50"
-                  >
-                    {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                    placeholder="Select Type"
+                  />
                 </div>
 
                 {/* Info Grid */}
@@ -1020,10 +1191,12 @@ export default function LeaveRequest() {
                   <div className="flex flex-col gap-1">
                     <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Full Name</label>
                     {isAdmInit ? (
-                      <select required value={formData.userName} onChange={handleNameChange} className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-white">
-                        <option value="">Select</option>
-                        {masterData.employees.map((e, idx) => <option key={idx} value={e.name}>{e.name}</option>)}
-                      </select>
+                      <SearchableSelect
+                        options={masterData.employees.map(e => ({ value: e.name, label: e.name }))}
+                        value={formData.userName}
+                        onChange={handleNameChange}
+                        placeholder="Select Name"
+                      />
                     ) : <input readOnly type="text" value={formData.userName} className="w-full bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 font-medium" />}
                   </div>
 
@@ -1068,10 +1241,12 @@ export default function LeaveRequest() {
 
                   <div className="flex flex-col gap-1">
                     <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Manager</label>
-                    <select required value={formData.manager} onChange={handleManagerChange} className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-white">
-                      <option value="">Select</option>
-                      {masterData.managers.map((m, idx) => <option key={idx} value={m.name}>{m.name}</option>)}
-                    </select>
+                    <SearchableSelect
+                      options={masterData.managers.map(m => ({ value: m.name, label: m.name }))}
+                      value={formData.manager}
+                      onChange={handleManagerChange}
+                      placeholder="Select Manager"
+                    />
                   </div>
 
                   <div className="flex flex-col gap-1">
