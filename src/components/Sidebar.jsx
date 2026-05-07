@@ -22,17 +22,17 @@ const Sidebar = ({ isOpen, onClose }) => {
     navigate('/login', { replace: true });
   };
 
-  const adminMenuItems = [
+  const isSuperAdmin = user?.role === 'SUPER ADMIN';
+
+  const menuItems = [
     { path: '/leave-request', icon: Plus, label: 'Leave Request' },
-    { path: '/setting', icon: Settings, label: 'Setting' },
   ];
 
-  const employeeMenuItems = [
-    { path: '/leave-request', icon: Plus, label: 'Leave Request' },
-    { path: '/my-profile', icon: User, label: 'My Profile' },
-  ];
-
-  const menuItems = user?.role === 'ADMIN' ? adminMenuItems : employeeMenuItems;
+  if (isSuperAdmin) {
+    menuItems.push({ path: '/setting', icon: Settings, label: 'Setting' });
+  } else {
+    menuItems.push({ path: '/my-profile', icon: User, label: 'My Profile' });
+  }
 
   return (
     <>

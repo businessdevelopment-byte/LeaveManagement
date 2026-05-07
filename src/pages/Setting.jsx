@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Search, Filter, Eye, EyeOff, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../store/authStore';
+import { useNavigate } from 'react-router-dom';
+
 
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT;
 const LOGIN_SHEET = import.meta.env.VITE_LOGIN_SHEET || 'Login';
@@ -25,6 +28,15 @@ export default function Setting() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.role !== 'SUPER ADMIN') {
+      navigate('/leave-request', { replace: true });
+    }
+  }, [user, navigate]);
+
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,6 +59,7 @@ export default function Setting() {
             gmail:     String(r[4] || ''),  // E
             designation: String(r[5] || ''), // F
             userId:    String(r[6] || ''),  // G — Login ID
+            employeeCode: String(r[6] || ''), // G — Employee Code
             pass:      String(r[7] || ''),  // H
             role:      String(r[8] || 'User'), // I
           }));

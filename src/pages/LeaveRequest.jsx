@@ -93,12 +93,12 @@ const SearchableSelect = ({ options, value, onChange, placeholder, className, di
     <div className={`relative ${className}`} ref={wrapperRef}>
       <div
         onClick={handleToggle}
-        className={`w-full border border-slate-200 rounded-lg px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all ${disabled ? 'bg-slate-50 cursor-not-allowed opacity-60' : 'bg-white hover:border-sky-400'}`}
+        className={`w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] flex items-center justify-between cursor-pointer transition-all h-9 ${disabled ? 'bg-slate-50 cursor-not-allowed opacity-60' : 'bg-white hover:border-sky-400'}`}
       >
-        <span className={!selectedOption ? 'text-slate-400' : 'text-slate-700'}>
+        <span className={`truncate mr-1 ${!selectedOption ? 'text-slate-400' : 'text-slate-700 font-medium'}`}>
           {selectedOption ? (selectedOption.label || selectedOption) : placeholder}
         </span>
-        <ChevronDown size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </div>
 
       {isOpen && (
@@ -250,10 +250,10 @@ export default function LeaveRequest() {
               timestamp: String(r[0] || ''), // A
               sn: String(r[1] || ''), // B
               type: String(r[2] || ''), // C
-              employeeId: String(r[3] || ''), // D
+              employeeId: String(r[6] || ''), // G
               name: String(r[4] || ''), // E
               designation: String(r[5] || ''), // F
-              mobile: String(r[6] || ''), // G
+              mobile: String(r[3] || ''), // D
               from: String(r[7] || ''), // H
               to: String(r[8] || ''), // I
               days: String(r[9] || ''), // J
@@ -409,8 +409,26 @@ export default function LeaveRequest() {
     return base.filter(req => {
       const q = filters.searchQuery.toLowerCase();
       if (q && !req.sn.toLowerCase().includes(q) && !req.name.toLowerCase().includes(q) && !req.type.toLowerCase().includes(q)) return false;
+      
+      const toComparisonDate = (d) => {
+        if (!d || d === '-') return null;
+        const s = String(d).trim().replace(/\//g, '-');
+        // If YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+        // If DD-MM-YYYY
+        const m = s.match(/^(\d{2})-(\d{2})-(\d{4})/);
+        if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+        return s;
+      };
+
+      const reqDate = toComparisonDate(req.from);
+      const fFrom = filters.fromDate; // YYYY-MM-DD
+      const fTo   = filters.toDate;   // YYYY-MM-DD
+
+      if (fFrom && reqDate && reqDate < fFrom) return false;
+      if (fTo && reqDate && reqDate > fTo) return false;
+      
       if (filters.type && req.type !== filters.type) return false;
-      if (filters.fromDate && req.from < filters.fromDate) return false;
       if (filters.employeeName && req.name !== filters.employeeName) return false;
       if (filters.manager && req.manager !== filters.manager) return false;
       return true;
@@ -633,7 +651,7 @@ export default function LeaveRequest() {
       // Column B (Index 1) is left empty; the Apps Script will generate the next unique SN
       // Columns A–N only; Column O is NOT written by the frontend
       const newRequestRow = [
-        ts, '', formData.type, formData.employeeId, formData.userName, formData.designation, formData.mobile,
+        ts, '', formData.type, formData.mobile, formData.userName, formData.designation, formData.employeeId,
         finalFrom, finalTo, finalDays, formData.manager, formData.managerId, formData.remarks, fileUrl
       ];
 
@@ -780,14 +798,22 @@ export default function LeaveRequest() {
             onFocus={(e) => (e.target.type = 'date')}
             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
-            className="w-full lg:w-40 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 h-10 transition-all"
+            className="w-full lg:w-32 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 h-9 transition-all font-medium"
+          />
+          <input
+            type="text"
+            placeholder="To Date"
+            onFocus={(e) => (e.target.type = 'date')}
+            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
+            onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+            className="w-full lg:w-32 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 h-9 transition-all font-medium"
           />
           <SearchableSelect
             placeholder="All Types"
             options={REQUEST_TYPES}
             value={filters.type}
             onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-            className="w-full lg:w-48"
+            className="w-full lg:w-40"
           />
 
           {isAdmin && (
@@ -796,7 +822,7 @@ export default function LeaveRequest() {
               options={[...new Set((activeTab === 'pending' ? pendingRequests : historyRequests).map(r => r.name).filter(n => n && n.trim() !== ''))].sort()}
               value={filters.employeeName}
               onChange={(e) => setFilters({ ...filters, employeeName: e.target.value })}
-              className="w-full lg:w-48"
+              className="w-full lg:w-40"
             />
           )}
 
@@ -806,7 +832,7 @@ export default function LeaveRequest() {
               options={[...new Set((activeTab === 'pending' ? pendingRequests : historyRequests).map(r => r.manager).filter(n => n && n.trim() !== ''))].sort()}
               value={filters.manager}
               onChange={(e) => setFilters({ ...filters, manager: e.target.value })}
-              className="w-full lg:w-48"
+              className="w-full lg:w-40"
             />
           )}
         </div>
@@ -851,9 +877,8 @@ export default function LeaveRequest() {
             <div className="md:hidden flex flex-col gap-2 p-1.5 overflow-y-auto flex-1 bg-slate-50/30">
               {paginatedRequests.map((req) => (
                 <div key={req.id} className={`bg-white rounded-lg border shadow-sm p-2.5 flex flex-col transition-all ${selectedRows.includes(req.id) ? 'border-sky-300 ring-1 ring-sky-200 bg-sky-50/10' : 'border-slate-200'}`}>
-
-                  {/* Top Header: Name, SN, Type */}
-                  <div className="flex justify-between items-start mb-2">
+                  {/* Top Header: Status & SN */}
+                  <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2">
                       {activeTab === 'pending' && isAdmin && (
                         <input
@@ -861,80 +886,94 @@ export default function LeaveRequest() {
                           checked={selectedRows.includes(req.id)}
                           onChange={() => handleSelectRow(req.id)}
                           disabled={matchesCurrentUser(req)}
-                          className={`w-4 h-4 rounded text-sky-600 border-slate-300 ${matchesCurrentUser(req) ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          className={`w-5 h-5 rounded text-sky-600 border-slate-300 focus:ring-sky-500/20 ${matchesCurrentUser(req) ? 'opacity-30 cursor-not-allowed' : ''}`}
                         />
                       )}
-                      <div className="flex flex-col">
-                        <span className="text-[12px] font-semibold text-slate-800 uppercase leading-tight">{req.name}</span>
-                        <span className="text-[9px] font-medium text-sky-600">{req.sn} • {req.employeeId}</span>
-                      </div>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-tighter border ${req.type.includes('Leave') ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{req.type}</span>
-                  </div>
-
-                  {/* Info Grid: Designation, Mobile, Manager */}
-                  <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2 mb-2">
-                    <div className="flex flex-col">
-                      <span className="text-[7px] text-slate-400 font-semibold uppercase tracking-widest">Designation</span>
-                      <span className="text-[10px] text-slate-600 font-medium truncate">{req.designation}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[7px] text-slate-400 font-semibold uppercase tracking-widest">Mobile</span>
-                      <span className="text-[10px] text-slate-600 font-medium">{req.mobile}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[7px] text-slate-400 font-semibold uppercase tracking-widest">Manager</span>
-                      <span className="text-[10px] text-slate-600 font-medium truncate">{req.manager}</span>
-                    </div>
-                  </div>
-
-                  {/* Dates & Duration */}
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2 text-[11px] text-slate-700 font-semibold bg-slate-50 px-2 py-1 rounded border border-slate-100">
-                      <Calendar size={13} className="text-slate-400" />
-                      <span>{formatUIDate(req.from)}</span>
-                      <span className="text-slate-300">→</span>
-                      <span>{formatUIDate(req.to)}</span>
+                      <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wider border ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : req.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                        {req.status}
+                      </span>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className="text-[7px] text-slate-400 font-semibold uppercase">Days</span>
-                      <span className="text-[11px] font-semibold text-sky-600 leading-none">{req.days}D</span>
+                      <span className="text-[11px] font-bold text-sky-600 tracking-tight">{req.sn}</span>
+                      <span className="text-[8px] text-slate-400 font-medium uppercase">{req.type}</span>
                     </div>
                   </div>
 
-                  {/* Remarks Section */}
-                  <div className="space-y-1.5 mb-2">
-                    <div className="flex flex-col">
-                      <span className="text-[7px] text-slate-400 font-semibold uppercase tracking-widest">User Remarks</span>
-                      <p className="text-[10px] text-slate-600 italic line-clamp-2 leading-relaxed bg-slate-50/50 p-1.5 rounded border border-slate-100/50">{req.remarks || 'No remarks provided'}</p>
+                  {/* Profile Section: Name & Designation */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 font-bold text-sm">
+                      {req.name.charAt(0)}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[13px] font-bold text-slate-800 uppercase truncate leading-tight">{req.name}</h3>
+                      <p className="text-[10px] text-slate-500 font-medium truncate">{req.designation} • ID: {req.employeeId}</p>
+                    </div>
+                  </div>
 
-                    {req.status !== 'PENDING' && (
-                      <div className="flex flex-col">
-                        <span className="text-[7px] text-slate-400 font-semibold uppercase tracking-widest">Approver Remarks</span>
-                        <p className="text-[10px] text-emerald-700 font-medium italic line-clamp-2 leading-relaxed bg-emerald-50/30 p-1.5 rounded border border-emerald-100/30">{req.approverRemarks || 'No remarks'}</p>
+                  {/* Details Grid: Mobile & Manager */}
+                  <div className="grid grid-cols-2 gap-3 mb-3 bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Contact</span>
+                      <span className="text-[11px] text-slate-700 font-medium">{req.mobile}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Manager</span>
+                      <span className="text-[11px] text-slate-700 font-medium truncate">{req.manager}</span>
+                    </div>
+                  </div>
+
+                  {/* Dates Section */}
+                  <div className="flex items-center gap-3 mb-3 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center px-1 mb-1">
+                        <span className="text-[8px] text-slate-400 font-bold uppercase">From</span>
+                        <span className="text-[8px] text-slate-400 font-bold uppercase">To</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                        <span>{formatUIDate(req.from)}</span>
+                        <div className="flex-1 mx-2 h-px bg-slate-100 relative">
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-sky-50 text-sky-600 rounded-full text-[9px] border border-sky-100">
+                            {req.days}D
+                          </div>
+                        </div>
+                        <span>{formatUIDate(req.to)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Remarks */}
+                  <div className="space-y-2 mb-3">
+                    <div className="relative group">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Remarks</span>
+                      <p className="text-[11px] text-slate-600 leading-relaxed bg-white border border-slate-100 p-2 rounded-lg italic">
+                        {req.remarks || <span className="text-slate-300">No remarks provided</span>}
+                      </p>
+                    </div>
+                    {req.approverRemarks && (
+                      <div>
+                        <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest mb-1 block">Approver Note</span>
+                        <p className="text-[11px] text-emerald-700 leading-relaxed bg-emerald-50/50 border border-emerald-100 p-2 rounded-lg italic font-medium">
+                          {req.approverRemarks}
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  {/* Footer Info: Status, Proof, Approved By */}
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-auto">
+                  {/* Actions & Footer */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-semibold uppercase border ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : req.status === 'PENDING' ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
-                        {req.status}
-                      </span>
                       {req.proofUrl && (
-                        <button onClick={() => setPreviewUrl(req.proofUrl)} className="p-1.5 bg-sky-50 text-sky-600 rounded-md border border-sky-100 active:scale-90 transition-all">
+                        <button onClick={() => setPreviewUrl(req.proofUrl)} className="flex items-center gap-1.5 px-2 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-[10px] font-bold uppercase border border-sky-100 active:scale-95 transition-all">
                           <FileText size={12} />
+                          Attachment
                         </button>
                       )}
                     </div>
-
                     <div className="flex flex-col items-end">
                       {req.approvedName && (
-                        <span className="text-[8px] text-slate-500 font-medium uppercase tracking-tight">By: {req.approvedName}</span>
+                        <span className="text-[9px] text-slate-600 font-bold">Approved by: {req.approvedName}</span>
                       )}
-                      <span className="text-[7px] text-slate-300 font-medium italic">Submitted: {formatUIDate(req.timestamp)}</span>
+                      <span className="text-[8px] text-slate-400 font-medium italic">Submitted {formatUIDate(req.timestamp)}</span>
                     </div>
                   </div>
 
@@ -1000,15 +1039,20 @@ export default function LeaveRequest() {
               <table className="w-full border-collapse">
                 <thead className="bg-[#f8fafc] sticky top-0 z-10 border-b border-slate-200">
                   <tr>
-                    {activeTab === 'pending' && currentUser?.role === 'ADMIN' && (
+                    {/* Admin Action Columns (at start) */}
+                    {isAdmin && (
                       <>
                         <th className="px-4 py-3 text-center w-10 whitespace-nowrap border-r border-slate-100">
-                          <input type="checkbox" onChange={handleSelectAll} checked={paginatedRequests.length > 0 && selectedRows.length === paginatedRequests.length} className="w-4 h-4 rounded text-sky-600 border-slate-300" />
+                          {activeTab === 'pending' && (
+                            <input type="checkbox" onChange={handleSelectAll} checked={paginatedRequests.length > 0 && selectedRows.length === paginatedRequests.length} className="w-4 h-4 rounded text-sky-600 border-slate-300" />
+                          )}
+                          {activeTab === 'history' && <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-widest">#</span>}
                         </th>
                         <th className="px-4 py-3 text-center min-w-[120px] whitespace-nowrap text-[10px] font-semibold text-slate-700 uppercase tracking-widest">Status</th>
                         <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap min-w-[180px]">Approver Remarks</th>
                       </>
                     )}
+
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Serial No</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Request Type</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Name</th>
@@ -1020,41 +1064,75 @@ export default function LeaveRequest() {
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Remarks</th>
                     <th className="px-4 py-3 text-center text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Proof</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Manager</th>
+
+                    {/* History specific columns for everyone (Approved Name) or for non-admins (Status/Remarks) */}
                     {activeTab === 'history' && (
                       <>
-                        <th className="px-4 py-3 text-center min-w-[120px] whitespace-nowrap text-[10px] font-semibold text-slate-700 uppercase tracking-widest">Status</th>
-                        <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap min-w-[180px]">Approver Remarks</th>
+                        {!isAdmin && (
+                          <>
+                            <th className="px-4 py-3 text-center min-w-[120px] whitespace-nowrap text-[10px] font-semibold text-slate-700 uppercase tracking-widest">Status</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap min-w-[180px]">Approver Remarks</th>
+                          </>
+                        )}
                         <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Approved Name</th>
                       </>
                     )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {paginatedRequests.map((req) => (
+                  {paginatedRequests.map((req, idx) => (
                     <tr key={req.id} className={`hover:bg-slate-50 transition-colors ${selectedRows.includes(req.id) ? 'bg-sky-50/50' : ''}`}>
-                      {activeTab === 'pending' && isAdmin && (
+                      {isAdmin && (
                         <>
                           <td className="px-4 py-3 text-center border-r border-slate-100">
-                            <input
-                              type="checkbox"
-                              checked={selectedRows.includes(req.id)}
-                              onChange={() => handleSelectRow(req.id)}
-                              disabled={matchesCurrentUser(req)}
-                              className={`w-4 h-4 rounded text-sky-600 border-slate-300 ${matchesCurrentUser(req) ? 'opacity-30 cursor-not-allowed' : ''}`}
-                            />
+                            {activeTab === 'pending' ? (
+                              <input
+                                type="checkbox"
+                                checked={selectedRows.includes(req.id)}
+                                onChange={() => handleSelectRow(req.id)}
+                                disabled={matchesCurrentUser(req)}
+                                className={`w-4 h-4 rounded text-sky-600 border-slate-300 ${matchesCurrentUser(req) ? 'opacity-30 cursor-not-allowed' : ''}`}
+                              />
+                            ) : (
+                              <div className="w-4 mx-auto" />
+                            )}
                           </td>
                           <td className="px-4 py-3 text-center whitespace-nowrap">
-                            <SearchableSelect
-                              options={[{ value: 'APPROVED', label: 'Approve' }, { value: 'REJECTED', label: 'Reject' }]}
-                              value={draftStatuses[req.id] || ''}
-                              onChange={(e) => setDraftStatuses(prev => ({ ...prev, [req.id]: e.target.value }))}
-                              placeholder="Select"
-                              disabled={!selectedRows.includes(req.id)}
-                              className="w-24"
-                            />
+                            {activeTab === 'pending' ? (
+                              <SearchableSelect
+                                options={[{ value: 'APPROVED', label: 'Approve' }, { value: 'REJECTED', label: 'Reject' }]}
+                                value={draftStatuses[req.id] || ''}
+                                onChange={(e) => setDraftStatuses(prev => ({ ...prev, [req.id]: e.target.value }))}
+                                placeholder="Select"
+                                disabled={!selectedRows.includes(req.id)}
+                                className="w-24"
+                              />
+                            ) : (
+                              <span className={`px-2 py-0.5 rounded-[4px] text-[10px] uppercase tracking-wider inline-flex border ${req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-rose-100 text-rose-700 border-rose-200'}`}>{req.status}</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap min-w-[180px]">
-                            <input type="text" placeholder="Add remarks..." value={draftRemarks[req.id] || ''} onChange={(e) => setDraftRemarks(prev => ({ ...prev, [req.id]: e.target.value }))} className={`text-[11px] border rounded px-2 py-1 w-full focus:outline-none ${selectedRows.includes(req.id) ? 'border-sky-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-50'}`} disabled={!selectedRows.includes(req.id)} />
+                            {activeTab === 'pending' ? (
+                              <input type="text" placeholder="Add remarks..." value={draftRemarks[req.id] || ''} onChange={(e) => setDraftRemarks(prev => ({ ...prev, [req.id]: e.target.value }))} className={`text-[11px] border rounded px-2 py-1 w-full focus:outline-none ${selectedRows.includes(req.id) ? 'border-sky-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-50'}`} disabled={!selectedRows.includes(req.id)} />
+                            ) : (
+                              <div className="relative group cursor-help max-w-[200px]">
+                                <div className="text-[11px] text-slate-600 italic truncate">{req.approverRemarks || '-'}</div>
+                                {req.approverRemarks && req.approverRemarks.length > 20 && (
+                                  <div className={`absolute z-[120] invisible group-hover:visible bg-slate-900 text-white p-3 rounded-xl shadow-2xl text-[11px] w-64 left-0 border border-slate-700 font-normal leading-relaxed break-words animate-in fade-in zoom-in duration-200 ${idx < 3 ? 'top-full mt-2' : 'bottom-full mb-2'}`}>
+                                    <div className="font-bold text-sky-400 mb-1.5 uppercase tracking-widest text-[9px] flex items-center gap-1.5">
+                                      <FileText size={10} />
+                                      Approver Remarks
+                                    </div>
+                                    {req.approverRemarks}
+                                    {idx < 3 ? (
+                                      <div className="absolute -top-1 left-4 w-2 h-2 bg-slate-900 rotate-45 border-l border-t border-slate-700" />
+                                    ) : (
+                                      <div className="absolute -bottom-1 left-4 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-slate-700" />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </td>
                         </>
                       )}
@@ -1101,7 +1179,23 @@ export default function LeaveRequest() {
                           )
                         ) : req.days}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-400 italic max-w-xs truncate whitespace-nowrap">{req.remarks}</td>
+                      <td className="px-4 py-3 relative group cursor-help max-w-[150px]">
+                        <div className="text-xs text-slate-400 italic truncate whitespace-nowrap">{req.remarks || '-'}</div>
+                        {req.remarks && req.remarks.length > 15 && (
+                          <div className={`absolute z-[120] invisible group-hover:visible bg-slate-900 text-white p-3 rounded-xl shadow-2xl text-[11px] w-64 left-0 border border-slate-700 font-normal leading-relaxed break-words animate-in fade-in zoom-in duration-200 ${idx < 3 ? 'top-full mt-2' : 'bottom-full mb-2'}`}>
+                            <div className="font-bold text-sky-400 mb-1.5 uppercase tracking-widest text-[9px] flex items-center gap-1.5">
+                              <FileText size={10} />
+                              User Remarks
+                            </div>
+                            {req.remarks}
+                            {idx < 3 ? (
+                              <div className="absolute -top-1 left-4 w-2 h-2 bg-slate-900 rotate-45 border-l border-t border-slate-700" />
+                            ) : (
+                              <div className="absolute -bottom-1 left-4 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-slate-700" />
+                            )}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         {req.proofUrl ? (
                           <button
@@ -1125,10 +1219,14 @@ export default function LeaveRequest() {
                       <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{req.manager}</td>
                       {activeTab === 'history' && (
                         <>
-                          <td className="px-4 py-3 text-center whitespace-nowrap">
-                            <span className={`px-2 py-0.5 rounded-[4px] text-[10px] uppercase tracking-wider inline-flex border ${req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-rose-100 text-rose-700 border-rose-200'}`}>{req.status}</span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap min-w-[180px] text-[11px] text-slate-600 italic">{req.approverRemarks || '-'}</td>
+                          {!isAdmin && (
+                            <>
+                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded-[4px] text-[10px] uppercase tracking-wider inline-flex border ${req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-rose-100 text-rose-700 border-rose-200'}`}>{req.status}</span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap min-w-[180px] text-[11px] text-slate-600 italic">{req.approverRemarks || '-'}</td>
+                            </>
+                          )}
                           <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap uppercase">{req.approvedName || '-'}</td>
                         </>
                       )}
@@ -1257,9 +1355,11 @@ export default function LeaveRequest() {
 
                 {/* Remarks */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Reason / Remarks</label>
+                  <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">
+                    Reason / Remarks {formData.type === 'Weekoff Request' && <span className="text-[8px] opacity-60 lowercase font-normal text-slate-400 ml-1">(Optional)</span>}
+                  </label>
                   <textarea
-                    required
+                    required={formData.type !== 'Weekoff Request'}
                     value={formData.remarks}
                     onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
                     rows="2" style={{minHeight:'44px'}}
