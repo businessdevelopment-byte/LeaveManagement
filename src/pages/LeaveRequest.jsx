@@ -905,7 +905,7 @@ export default function LeaveRequest() {
                       {req.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-[13px] font-bold text-slate-800 uppercase truncate leading-tight">{req.name}</h3>
+                      <h3 className="text-[13px] font-bold text-slate-800 truncate leading-tight">{req.name}</h3>
                       <p className="text-[10px] text-slate-500 font-medium truncate">{req.designation}</p>
                     </div>
                   </div>
@@ -1143,7 +1143,7 @@ export default function LeaveRequest() {
                       )}
                       <td className="px-4 py-3 text-sm text-sky-600 hover:underline cursor-pointer whitespace-nowrap">{req.sn}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-[10px] text-slate-500 uppercase">{req.type}</td>
-                      <td className="px-4 py-3 text-sm text-slate-700 uppercase whitespace-nowrap">{req.name}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">{req.name}</td>
                       <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.designation}</td>
                       <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.employeeId}</td>
                       <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.mobile}</td>
@@ -1233,7 +1233,7 @@ export default function LeaveRequest() {
                               <td className="px-4 py-3 whitespace-nowrap min-w-[180px] text-[11px] text-slate-600 italic">{req.approverRemarks || '-'}</td>
                             </>
                           )}
-                          <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap uppercase">{req.approvedName || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{req.approvedName || '-'}</td>
                         </>
                       )}
                     </tr>

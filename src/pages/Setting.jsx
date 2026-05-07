@@ -249,7 +249,7 @@ export default function Setting() {
                     </div>
                   </div>
                   <div className="mt-1">
-                    <h3 className="text-[13px] font-bold text-slate-700 uppercase truncate">{u.name}</h3>
+                    <h3 className="text-[13px] font-bold text-slate-700 truncate">{u.name}</h3>
                     <p className="text-[11px] text-slate-500 truncate">{u.designation}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
@@ -319,11 +319,11 @@ export default function Setting() {
                       </td>
                       <td className="px-4 py-3 text-sm text-sky-600 whitespace-nowrap font-medium">{u.serialNo}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.timestamp}</td>
-                      <td className="px-4 py-3 text-sm text-slate-700 uppercase whitespace-nowrap font-semibold">{u.name}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap font-semibold">{u.name}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.contactNo}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.gmail}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.employeeCode}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap uppercase">{u.designation}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.designation}</td>
                       <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">{u.userId}</td>
                       <td className="px-4 py-3 text-[11px] font-mono text-slate-500 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -420,7 +420,7 @@ export default function Setting() {
                     placeholder="Enter full name"
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
                     value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
 
@@ -430,10 +430,11 @@ export default function Setting() {
                     <input
                       required
                       type="text"
-                      placeholder="Phone number"
+                      maxLength={10}
+                      placeholder="10-digit number"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
                       value={formData.contactNo}
-                      onChange={e => setFormData({ ...formData, contactNo: e.target.value })}
+                      onChange={e => setFormData({ ...formData, contactNo: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">
@@ -455,7 +456,7 @@ export default function Setting() {
                       placeholder="Position"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
                       value={formData.designation}
-                      onChange={e => setFormData({ ...formData, designation: e.target.value.toUpperCase() })}
+                      onChange={e => setFormData({ ...formData, designation: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">
@@ -494,6 +495,7 @@ export default function Setting() {
                     >
                       <option value="User">User</option>
                       <option value="Admin">Admin</option>
+                      <option value="Super Admin">Super Admin</option>
                     </select>
                   )}
                 </div>
