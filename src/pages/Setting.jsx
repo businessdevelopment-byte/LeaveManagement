@@ -8,14 +8,14 @@ import { useNavigate } from 'react-router-dom';
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT;
 const LOGIN_SHEET = import.meta.env.VITE_LOGIN_SHEET || 'Login';
 
-const EMPTY_FORM = { 
-  name: '', 
-  contactNo: '', 
-  gmail: '', 
-  designation: '', 
-  userId: '', 
-  pass: '', 
-  role: 'User' 
+const EMPTY_FORM = {
+  name: '',
+  contactNo: '',
+  gmail: '',
+  designation: '',
+  userId: '',
+  pass: '',
+  role: 'User'
 };
 
 export default function Setting() {
@@ -53,51 +53,51 @@ export default function Setting() {
           .map((r, idx) => ({
             _rowIndex: idx + 2,
             timestamp: String(r[0] || ''),  // A
-            serialNo:  String(r[1] || ''),  // B
-            name:      String(r[2] || ''),  // C
+            serialNo: String(r[1] || ''),  // B
+            name: String(r[2] || ''),  // C
             contactNo: String(r[3] || ''),  // D
-            gmail:     String(r[4] || ''),  // E
+            gmail: String(r[4] || ''),  // E
             designation: String(r[5] || ''), // F
-            userId:    String(r[6] || ''),  // G — Login ID
+            userId: String(r[6] || ''),  // G — Login ID
             employeeCode: String(r[6] || ''), // G — Employee Code
-            pass:      String(r[7] || ''),  // H
-            role:      String(r[8] || 'User'), // I
+            pass: String(r[7] || ''),  // H
+            role: String(r[8] || 'User'), // I
           }));
         setUsers(list);
       }
-    } catch (e) { 
-      toast.error('Failed to load users'); 
-    } finally { 
-      setIsLoading(false); 
+    } catch (e) {
+      toast.error('Failed to load users');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const openAdd = () => { 
-    setEditUser(null); 
-    setFormData(EMPTY_FORM); 
-    setShowFormModal(true); 
+  const openAdd = () => {
+    setEditUser(null);
+    setFormData(EMPTY_FORM);
+    setShowFormModal(true);
   };
 
   const openEdit = (u) => {
     setEditUser(u);
-    setFormData({ 
-      name:        u.name, 
-      contactNo:   u.contactNo, 
-      gmail:       u.gmail, 
-      designation: u.designation, 
-      userId:      u.userId, 
-      pass:        u.pass, 
-      role:        u.role 
+    setFormData({
+      name: u.name,
+      contactNo: u.contactNo,
+      gmail: u.gmail,
+      designation: u.designation,
+      userId: u.userId,
+      pass: u.pass,
+      role: u.role
     });
     setShowFormModal(true);
   };
 
-  const closeForm = () => { 
-    setShowFormModal(false); 
-    setEditUser(null); 
-    setFormData(EMPTY_FORM); 
+  const closeForm = () => {
+    setShowFormModal(false);
+    setEditUser(null);
+    setFormData(EMPTY_FORM);
   };
 
   const handleSubmit = async (e) => {
@@ -107,42 +107,42 @@ export default function Setting() {
     try {
       const now = new Date();
       const p = n => n.toString().padStart(2, '0');
-      const ts = `${now.getFullYear()}/${p(now.getMonth()+1)}/${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+      const ts = `${now.getFullYear()}/${p(now.getMonth() + 1)}/${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
 
       let body;
       if (editUser) {
         // A=ts(keep), B=sn(keep), C=Name, D=Contact, E=Gmail, F=Desig, G=LoginID, H=Pass, I=Role
         const rowData = ['', '', formData.name, formData.contactNo, formData.gmail, formData.designation, formData.userId, formData.pass, formData.role];
-        body = new URLSearchParams({ 
-          action: 'update', 
-          sheetName: LOGIN_SHEET, 
-          rowIndex: editUser._rowIndex, 
-          rowData: JSON.stringify(rowData) 
+        body = new URLSearchParams({
+          action: 'update',
+          sheetName: LOGIN_SHEET,
+          rowIndex: editUser._rowIndex,
+          rowData: JSON.stringify(rowData)
         });
       } else {
         const sn = `SN-${String(users.length + 1).padStart(3, '0')}`;
         // A=ts, B=sn, C=Name, D=Contact, E=Gmail, F=Desig, G=LoginID, H=Pass, I=Role
         const rowData = [ts, sn, formData.name, formData.contactNo, formData.gmail, formData.designation, formData.userId, formData.pass, formData.role];
-        body = new URLSearchParams({ 
-          action: 'insert', 
-          sheetName: LOGIN_SHEET, 
-          rowData: JSON.stringify(rowData) 
+        body = new URLSearchParams({
+          action: 'insert',
+          sheetName: LOGIN_SHEET,
+          rowData: JSON.stringify(rowData)
         });
       }
-      const res = await fetch(SCRIPT_URL, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
-        body 
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       toast.success(editUser ? 'User updated successfully!' : 'User added successfully!', { id: tid });
       closeForm();
       await fetchUsers();
-    } catch (err) { 
-      toast.error('Failed to save user', { id: tid }); 
-    } finally { 
-      setIsSaving(false); 
+    } catch (err) {
+      toast.error('Failed to save user', { id: tid });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -150,21 +150,21 @@ export default function Setting() {
     if (!window.confirm(`Are you sure you want to delete user "${u.name}" (${u.serialNo})?`)) return;
     const tid = toast.loading('Deleting...');
     try {
-      const res = await fetch(SCRIPT_URL, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
-        body: new URLSearchParams({ 
-          action: 'delete', 
-          sheetName: LOGIN_SHEET, 
-          rowIndex: u._rowIndex 
-        }) 
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'delete',
+          sheetName: LOGIN_SHEET,
+          rowIndex: u._rowIndex
+        })
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       toast.success('User deleted successfully!', { id: tid });
       await fetchUsers();
-    } catch (err) { 
-      toast.error('Delete failed', { id: tid }); 
+    } catch (err) {
+      toast.error('Delete failed', { id: tid });
     }
   };
 
@@ -187,31 +187,31 @@ export default function Setting() {
         <div className="flex w-full lg:w-auto gap-2 items-center flex-1">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search Name, Serial No, ID..." 
+            <input
+              type="text"
+              placeholder="Search Name, Serial No, ID..."
               value={filters.searchQuery}
               onChange={e => { setFilters({ ...filters, searchQuery: e.target.value }); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-md focus:outline-none focus:border-sky-500 text-sm h-[38px]" 
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-md focus:outline-none focus:border-sky-500 text-sm h-[38px]"
             />
           </div>
-          <button 
-            onClick={() => setShowMobileFilters(!showMobileFilters)} 
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
             className={`lg:hidden flex items-center justify-center rounded-md shadow-sm h-[38px] w-[38px] flex-shrink-0 transition-all ${showMobileFilters ? 'bg-sky-100 text-sky-700 border border-sky-200' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
           >
             <Filter size={16} />
           </button>
-          <button 
-            onClick={openAdd} 
+          <button
+            onClick={openAdd}
             className="lg:hidden bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center rounded-md h-[38px] w-[38px] shadow-sm flex-shrink-0 transition-colors"
           >
             <span className="text-xl font-bold leading-none mt-[-2px]">+</span>
           </button>
         </div>
         <div className={`${showMobileFilters ? 'flex' : 'hidden'} lg:flex flex-col sm:flex-row gap-2 w-full lg:w-auto items-center`}>
-          <select 
-            value={filters.role} 
-            onChange={e => { setFilters({ ...filters, role: e.target.value }); setCurrentPage(1); }} 
+          <select
+            value={filters.role}
+            onChange={e => { setFilters({ ...filters, role: e.target.value }); setCurrentPage(1); }}
             className="w-full lg:w-40 px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-sky-500 h-[38px]"
           >
             <option value="">All Roles</option>
@@ -219,8 +219,8 @@ export default function Setting() {
             <option value="User">User</option>
           </select>
         </div>
-        <button 
-          onClick={openAdd} 
+        <button
+          onClick={openAdd}
           className="hidden lg:flex bg-[#0284c7] hover:bg-[#0369a1] text-white px-6 py-2 h-[38px] rounded-md font-bold text-sm items-center justify-center gap-2 whitespace-nowrap shadow-sm uppercase tracking-wider transition-colors flex-shrink-0"
         >
           <span className="text-lg font-black leading-none mt-[1px]">+</span> Add User
@@ -383,7 +383,7 @@ export default function Setting() {
       {showFormModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 pb-safe pt-safe">
           <div className="bg-white w-[92%] sm:w-full max-w-[360px] sm:max-w-md h-auto max-h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-200">
-            
+
             {/* Header */}
             <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
               <h2 className="text-base sm:text-lg font-semibold text-slate-800">
@@ -397,7 +397,7 @@ export default function Setting() {
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 scrollbar-hide">
               <form id="userForm" onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-                
+
                 {/* Read-only info strip in edit mode */}
                 {editUser && (
                   <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
@@ -414,70 +414,70 @@ export default function Setting() {
 
                 <div className="space-y-1 sm:space-y-1.5">
                   <label className="text-xs sm:text-sm text-slate-600">Full Name</label>
-                  <input 
-                    required 
-                    type="text" 
+                  <input
+                    required
+                    type="text"
                     placeholder="Enter full name"
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                    value={formData.name} 
-                    onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })} 
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm text-slate-600">Contact No</label>
-                    <input 
-                      required 
-                      type="text" 
+                    <input
+                      required
+                      type="text"
                       placeholder="Phone number"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                      value={formData.contactNo} 
-                      onChange={e => setFormData({ ...formData, contactNo: e.target.value })} 
+                      value={formData.contactNo}
+                      onChange={e => setFormData({ ...formData, contactNo: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm text-slate-600">Gmail</label>
-                    <input 
-                      required 
-                      type="email" 
+                    <input
+                      required
+                      type="email"
                       placeholder="Email address"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                      value={formData.gmail} 
-                      onChange={e => setFormData({ ...formData, gmail: e.target.value })} 
+                      value={formData.gmail}
+                      onChange={e => setFormData({ ...formData, gmail: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm text-slate-600">Designation</label>
-                    <input 
-                      required 
-                      type="text" 
+                    <input
+                      required
+                      type="text"
                       placeholder="Position"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                      value={formData.designation} 
-                      onChange={e => setFormData({ ...formData, designation: e.target.value.toUpperCase() })} 
+                      value={formData.designation}
+                      onChange={e => setFormData({ ...formData, designation: e.target.value.toUpperCase() })}
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm text-slate-600">Login ID</label>
-                    <input 
-                      required 
-                      type="text" 
+                    <input
+                      required
+                      type="text"
                       placeholder="User ID"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                      value={formData.userId} 
-                      onChange={e => setFormData({ ...formData, userId: e.target.value })} 
+                      value={formData.userId}
+                      onChange={e => setFormData({ ...formData, userId: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm text-slate-600">Password</label>
-                    <input 
-                      required 
-                      type="text" 
+                    <input
+                      required
+                      type="text"
                       placeholder="Password"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                      value={formData.pass} 
-                      onChange={e => setFormData({ ...formData, pass: e.target.value })} 
+                      value={formData.pass}
+                      onChange={e => setFormData({ ...formData, pass: e.target.value })}
                     />
                   </div>
                 </div>
@@ -487,9 +487,9 @@ export default function Setting() {
                   {editUser ? (
                     <input readOnly value={formData.role} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-slate-500 cursor-not-allowed font-medium" />
                   ) : (
-                    <select 
-                      value={formData.role} 
-                      onChange={e => setFormData({ ...formData, role: e.target.value })} 
+                    <select
+                      value={formData.role}
+                      onChange={e => setFormData({ ...formData, role: e.target.value })}
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
                     >
                       <option value="User">User</option>
@@ -502,17 +502,17 @@ export default function Setting() {
 
             {/* Footer */}
             <div className="px-4 py-3 sm:px-5 sm:py-4 border-t border-slate-100 bg-slate-50 flex gap-2 sm:gap-3 flex-shrink-0">
-              <button 
-                type="button" 
-                onClick={closeForm} 
+              <button
+                type="button"
+                onClick={closeForm}
                 className="px-4 py-2 sm:px-5 sm:py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition-all text-xs sm:text-sm shadow-sm"
               >
                 Cancel
               </button>
-              <button 
-                form="userForm" 
-                type="submit" 
-                disabled={isSaving} 
+              <button
+                form="userForm"
+                type="submit"
+                disabled={isSaving}
                 className="flex-1 bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white font-medium py-2 sm:py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm text-xs sm:text-sm"
               >
                 {isSaving ? (

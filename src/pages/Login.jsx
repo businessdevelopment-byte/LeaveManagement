@@ -43,7 +43,7 @@ const Login = () => {
       }
 
       let data = cachedData;
-      
+
       // If data isn't pre-fetched yet, wait for the pending promise or fetch it now
       if (!data) {
         if (fetchPromise.current) {
@@ -67,22 +67,22 @@ const Login = () => {
       // Skip header row (i = 1)
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
-        const rowName        = String(row[2] || '').trim(); // C — Name
-        const rowMobile      = String(row[3] || '').trim(); // D — Mobile
+        const rowName = String(row[2] || '').trim(); // C — Name
+        const rowMobile = String(row[3] || '').trim(); // D — Mobile
         const rowDesignation = String(row[5] || '').trim(); // F — Designation
-        const rowLoginId     = String(row[6] || '').trim(); // G — Login ID
-        const rowPass        = String(row[7] || '').trim(); // H — Password
-        const rowRole        = String(row[8] || '').trim(); // I — Role
+        const rowLoginId = String(row[6] || '').trim(); // G — Login ID
+        const rowPass = String(row[7] || '').trim(); // H — Password
+        const rowRole = String(row[8] || '').trim(); // I — Role
 
         // Match: Login ID = Column G, Password = Column H
         if (id === rowLoginId && password === rowPass) {
           matchedUser = {
-            name:         rowName,
-            username:     rowLoginId,     // shown as ID in header
+            name: rowName,
+            username: rowLoginId,     // shown as ID in header
             employeeCode: rowLoginId,     // used for leave request filtering
-            mobile:       rowMobile,      // pre-fill form
-            designation:  rowDesignation, // pre-fill form
-            role:         rowRole.toUpperCase(),
+            mobile: rowMobile,      // pre-fill form
+            designation: rowDesignation, // pre-fill form
+            role: rowRole.toUpperCase(),
           };
           break;
         }

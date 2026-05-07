@@ -74,9 +74,9 @@ const SearchableSelect = ({ options, value, onChange, placeholder, className, di
         const viewportHeight = window.innerHeight;
         // If bottom of the dropdown (approx 300px) would exceed viewport, or if it's in the bottom 40% of screen
         const spaceBelow = viewportHeight - rect.bottom;
-        const wouldFitBelow = spaceBelow > 280; 
+        const wouldFitBelow = spaceBelow > 280;
         const spaceAbove = rect.top;
-        
+
         setOpenUp(!wouldFitBelow && spaceAbove > spaceBelow);
       }
     }
@@ -120,7 +120,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, className, di
               </div>
             </div>
           )}
-          
+
           <div className="max-h-40 overflow-y-auto py-1">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt, i) => {
@@ -196,10 +196,10 @@ export default function LeaveRequest() {
   const isAdmInit = isAdmin;
   const [formData, setFormData] = useState({
     type: 'Leave Request',
-    userName:    isAdmInit ? '' : (currentUser?.name        || ''), // Column C
-    employeeId:  isAdmInit ? '' : (currentUser?.employeeCode || ''), // Column G
-    designation: isAdmInit ? '' : (currentUser?.designation  || ''), // Column F
-    mobile:      isAdmInit ? '' : (currentUser?.mobile        || ''), // Column D
+    userName: isAdmInit ? '' : (currentUser?.name || ''), // Column C
+    employeeId: isAdmInit ? '' : (currentUser?.employeeCode || ''), // Column G
+    designation: isAdmInit ? '' : (currentUser?.designation || ''), // Column F
+    mobile: isAdmInit ? '' : (currentUser?.mobile || ''), // Column D
     fromDate: '',
     toDate: '',
     date: '',
@@ -239,7 +239,7 @@ export default function LeaveRequest() {
           // Column B (index 1) = SN — present means row was submitted
           // Column P (index 15) = Approval Timestamp — set by backend on approval
           const hasSN = String(r[1] || '').trim() !== '';
-          const colP  = String(r[15] || '').trim();
+          const colP = String(r[15] || '').trim();
 
           const isPending = hasSN && colP === '';
           const isHistory = hasSN && colP !== '';
@@ -250,10 +250,10 @@ export default function LeaveRequest() {
               timestamp: String(r[0] || ''), // A
               sn: String(r[1] || ''), // B
               type: String(r[2] || ''), // C
-              employeeId: String(r[6] || ''), // G
+              employeeId: String(r[3] || ''), // D
               name: String(r[4] || ''), // E
               designation: String(r[5] || ''), // F
-              mobile: String(r[3] || ''), // D
+              mobile: String(r[6] || ''), // G
               from: String(r[7] || ''), // H
               to: String(r[8] || ''), // I
               days: String(r[9] || ''), // J
@@ -291,11 +291,11 @@ export default function LeaveRequest() {
         const mgrs = [];
 
         rows.forEach(r => {
-          const empName  = String(r[2] || '').trim(); // C — Full Name
-          const empMobile= String(r[3] || '').trim(); // D — Mobile
+          const empName = String(r[2] || '').trim(); // C — Full Name
+          const empMobile = String(r[3] || '').trim(); // D — Mobile
           const empDesig = String(r[5] || '').trim(); // F — Designation
-          const empId    = String(r[6] || '').trim(); // G — Employee ID (Login ID)
-          const role     = String(r[8] || '').trim(); // I — Role
+          const empId = String(r[6] || '').trim(); // G — Employee ID (Login ID)
+          const role = String(r[8] || '').trim(); // I — Role
 
           // All employees for the Name dropdown
           if (empName && empId) {
@@ -365,8 +365,8 @@ export default function LeaveRequest() {
   const matchesCurrentUser = (r) => {
     const userCode = String(currentUser?.employeeCode || '').trim().toLowerCase();
     const userName = String(currentUser?.name || '').trim().toLowerCase();
-    const reqCode  = String(r.employeeId || '').trim().toLowerCase();
-    const reqName  = String(r.name || '').trim().toLowerCase();
+    const reqCode = String(r.employeeId || '').trim().toLowerCase();
+    const reqName = String(r.name || '').trim().toLowerCase();
     if (userCode && reqCode) return reqCode === userCode;
     if (userName && reqName) return reqName === userName;
     return false;
@@ -375,16 +375,16 @@ export default function LeaveRequest() {
   // For admins: match rows where manager name (Data Col K) = admin name (Login Col C)
   //             AND manager number (Data Col L) = admin mobile (Login Col D)
   const matchesAdminAsManager = (r) => {
-    const adminName   = String(currentUser?.name   || '').trim().toLowerCase();
-    const adminMobile = String(currentUser?.mobile  || '').trim().toLowerCase();
-    const reqMgrName  = String(r.manager   || '').trim().toLowerCase();
-    const reqMgrId    = String(r.managerId || '').trim().toLowerCase();
+    const adminName = String(currentUser?.name || '').trim().toLowerCase();
+    const adminMobile = String(currentUser?.mobile || '').trim().toLowerCase();
+    const reqMgrName = String(r.manager || '').trim().toLowerCase();
+    const reqMgrId = String(r.managerId || '').trim().toLowerCase();
     // Both must match
     return adminName && adminMobile
       ? reqMgrName === adminName && reqMgrId === adminMobile
       : adminName
-      ? reqMgrName === adminName   // fallback: name only
-      : false;
+        ? reqMgrName === adminName   // fallback: name only
+        : false;
   };
 
   const pendingRequests = useMemo(() => {
@@ -409,7 +409,7 @@ export default function LeaveRequest() {
     return base.filter(req => {
       const q = filters.searchQuery.toLowerCase();
       if (q && !req.sn.toLowerCase().includes(q) && !req.name.toLowerCase().includes(q) && !req.type.toLowerCase().includes(q)) return false;
-      
+
       const toComparisonDate = (d) => {
         if (!d || d === '-') return null;
         const s = String(d).trim().replace(/\//g, '-');
@@ -423,11 +423,11 @@ export default function LeaveRequest() {
 
       const reqDate = toComparisonDate(req.from);
       const fFrom = filters.fromDate; // YYYY-MM-DD
-      const fTo   = filters.toDate;   // YYYY-MM-DD
+      const fTo = filters.toDate;   // YYYY-MM-DD
 
       if (fFrom && reqDate && reqDate < fFrom) return false;
       if (fTo && reqDate && reqDate > fTo) return false;
-      
+
       if (filters.type && req.type !== filters.type) return false;
       if (filters.employeeName && req.name !== filters.employeeName) return false;
       if (filters.manager && req.manager !== filters.manager) return false;
@@ -563,10 +563,10 @@ export default function LeaveRequest() {
     const isAdm = userRole === 'ADMIN' || userRole === 'SUPER ADMIN';
     setFormData({
       type: 'Leave Request',
-      userName:    isAdm ? '' : (currentUser?.name        || ''), // Column C
-      employeeId:  isAdm ? '' : (currentUser?.employeeCode || ''), // Column G
-      designation: isAdm ? '' : (currentUser?.designation  || ''), // Column F
-      mobile:      isAdm ? '' : (currentUser?.mobile        || ''), // Column D
+      userName: isAdm ? '' : (currentUser?.name || ''), // Column C
+      employeeId: isAdm ? '' : (currentUser?.employeeCode || ''), // Column G
+      designation: isAdm ? '' : (currentUser?.designation || ''), // Column F
+      mobile: isAdm ? '' : (currentUser?.mobile || ''), // Column D
       fromDate: '',
       toDate: '',
       date: '',
@@ -622,7 +622,7 @@ export default function LeaveRequest() {
     try {
       const now = new Date();
       const pad = (n) => n.toString().padStart(2, '0');
-      const ts = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
       const finalFrom = (formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request') ? formData.date : formData.fromDate;
 
@@ -651,7 +651,7 @@ export default function LeaveRequest() {
       // Column B (Index 1) is left empty; the Apps Script will generate the next unique SN
       // Columns A–N only; Column O is NOT written by the frontend
       const newRequestRow = [
-        ts, '', formData.type, formData.mobile, formData.userName, formData.designation, formData.employeeId,
+        ts, '', formData.type, formData.employeeId, formData.userName, formData.designation, formData.mobile,
         finalFrom, finalTo, finalDays, formData.manager, formData.managerId, formData.remarks, fileUrl
       ];
 
@@ -856,7 +856,7 @@ export default function LeaveRequest() {
             className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white h-10 w-10 px-0 rounded-lg font-medium text-[11px] shadow-sm uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap flex-shrink-0"
             title="Create Request"
           >
-            <Plus size={18} /> 
+            <Plus size={18} />
           </button>
 
         </div>
@@ -906,19 +906,23 @@ export default function LeaveRequest() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-[13px] font-bold text-slate-800 uppercase truncate leading-tight">{req.name}</h3>
-                      <p className="text-[10px] text-slate-500 font-medium truncate">{req.designation} • ID: {req.employeeId}</p>
+                      <p className="text-[10px] text-slate-500 font-medium truncate">{req.designation}</p>
                     </div>
                   </div>
 
-                  {/* Details Grid: Mobile & Manager */}
-                  <div className="grid grid-cols-2 gap-3 mb-3 bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+                  {/* Details Grid: ID, Mobile & Manager */}
+                  <div className="grid grid-cols-3 gap-2 mb-3 bg-slate-50/50 p-2 rounded-lg border border-slate-100">
                     <div className="flex flex-col">
-                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Contact</span>
-                      <span className="text-[11px] text-slate-700 font-medium">{req.mobile}</span>
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Emp ID</span>
+                      <span className="text-[10px] text-slate-700 font-medium truncate">{req.employeeId}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Mobile</span>
+                      <span className="text-[10px] text-slate-700 font-medium truncate">{req.mobile}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Manager</span>
-                      <span className="text-[11px] text-slate-700 font-medium truncate">{req.manager}</span>
+                      <span className="text-[10px] text-slate-700 font-medium truncate">{req.manager}</span>
                     </div>
                   </div>
 
@@ -998,11 +1002,11 @@ export default function LeaveRequest() {
                         <div className="flex gap-2 items-center">
                           <div className="flex-1 flex flex-col">
                             <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">From Date</span>
-                            <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+                            <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
                           </div>
                           <div className="flex-1 flex flex-col">
                             <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">To Date</span>
-                            <input type="date" value={toInputDate(draftDates[req.id]?.to)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+                            <input type="date" value={toInputDate(draftDates[req.id]?.to)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
                           </div>
                           <div className="w-14 flex flex-col">
                             <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Days</span>
@@ -1014,7 +1018,7 @@ export default function LeaveRequest() {
                         <div className="flex gap-2 items-center">
                           <div className="flex-1 flex flex-col">
                             <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Date</span>
-                            <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
+                            <input type="date" value={toInputDate(draftDates[req.id]?.from)} onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value } }))} className="h-8 text-[10px] border border-sky-100 rounded-md px-1.5 font-medium" />
                           </div>
                           <div className="flex-1 flex flex-col">
                             <span className="text-[7px] text-slate-400 font-semibold uppercase mb-0.5">To</span>
@@ -1057,6 +1061,7 @@ export default function LeaveRequest() {
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Request Type</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Name</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Designation</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Employee ID</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Mobile No</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">From</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">To</th>
@@ -1140,13 +1145,14 @@ export default function LeaveRequest() {
                       <td className="px-4 py-3 whitespace-nowrap text-[10px] text-slate-500 uppercase">{req.type}</td>
                       <td className="px-4 py-3 text-sm text-slate-700 uppercase whitespace-nowrap">{req.name}</td>
                       <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.designation}</td>
+                      <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.employeeId}</td>
                       <td className="px-4 py-3 text-[11px] text-slate-500 whitespace-nowrap">{req.mobile}</td>
                       <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
                         {activeTab === 'pending' && selectedRows.includes(req.id) && isAdmin ? (
                           <input
                             type="date"
                             value={toInputDate(draftDates[req.id]?.from)}
-                            onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value.split('-').reverse().join('/') } }))}
+                            onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], from: e.target.value } }))}
                             className="w-[110px] px-2 py-1 text-[11px] border border-sky-200 rounded focus:border-sky-500"
                           />
                         ) : formatUIDate(req.from)}
@@ -1157,7 +1163,7 @@ export default function LeaveRequest() {
                             <input
                               type="date"
                               value={toInputDate(draftDates[req.id]?.to)}
-                              onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value.split('-').reverse().join('/') } }))}
+                              onChange={(e) => setDraftDates(prev => ({ ...prev, [req.id]: { ...prev[req.id], to: e.target.value } }))}
                               className="w-[110px] px-2 py-1 text-[11px] border border-sky-200 rounded focus:border-sky-500"
                             />
                           ) : (
@@ -1362,7 +1368,7 @@ export default function LeaveRequest() {
                     required={formData.type !== 'Weekoff Request'}
                     value={formData.remarks}
                     onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-                    rows="2" style={{minHeight:'44px'}}
+                    rows="2" style={{ minHeight: '44px' }}
                     className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 resize-none bg-white"
                   />
                 </div>
