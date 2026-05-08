@@ -618,6 +618,12 @@ export default function LeaveRequest() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.type === 'Punchmiss Request' && !formData.proof) {
+      toast.error('Proof Attachment is mandatory for Punchmiss Request');
+      return;
+    }
+    
     setLoading(true);
     try {
       const now = new Date();
@@ -1039,7 +1045,7 @@ export default function LeaveRequest() {
 
 
             {/* Desktop View: Table */}
-            <div className="hidden md:block overflow-x-auto flex-1 scrollbar-hide">
+            <div className="hidden md:block overflow-x-auto flex-1 hide-scrollbar-y">
               <table className="w-full border-collapse">
                 <thead className="bg-[#f8fafc] sticky top-0 z-10 border-b border-slate-200">
                   <tr>
@@ -1281,7 +1287,7 @@ export default function LeaveRequest() {
               <form id="leaveForm" onSubmit={handleSubmit} className="space-y-2">
                 {/* Request Type */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Request Type</label>
+                  <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Request Type <span className="text-rose-500">*</span></label>
                   <SearchableSelect
                     options={REQUEST_TYPES}
                     value={formData.type}
@@ -1293,7 +1299,7 @@ export default function LeaveRequest() {
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Full Name</label>
+                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Full Name <span className="text-rose-500">*</span></label>
                     {isAdmInit ? (
                       <SearchableSelect
                         options={masterData.employees.map(e => ({ value: e.name, label: e.name }))}
@@ -1305,28 +1311,28 @@ export default function LeaveRequest() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Employee ID</label>
+                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Employee ID <span className="text-rose-500">*</span></label>
                     <input readOnly type="text" value={formData.employeeId} className="w-full bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 font-medium" />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Designation</label>
+                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Designation <span className="text-rose-500">*</span></label>
                     <input readOnly type="text" value={formData.designation} className="w-full bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 font-medium" />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Mobile No.</label>
+                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Mobile No. <span className="text-rose-500">*</span></label>
                     <input readOnly type="text" value={formData.mobile} className="w-full bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 font-medium" />
                   </div>
 
                   {(formData.type === 'Leave Request' || formData.type === 'WFH Request') && (
                     <>
                       <div className="flex flex-col gap-1">
-                        <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">From Date</label>
+                        <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">From Date <span className="text-rose-500">*</span></label>
                         <input required type="date" value={formData.fromDate} onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })} className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-white" />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">To Date</label>
+                        <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">To Date <span className="text-rose-500">*</span></label>
                         <input required type="date" value={formData.toDate} onChange={(e) => setFormData({ ...formData, toDate: e.target.value })} className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-white" />
                       </div>
                       <div className="flex flex-col gap-1">
@@ -1338,13 +1344,13 @@ export default function LeaveRequest() {
 
                   {(formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request') && (
                     <div className="flex flex-col gap-1">
-                      <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Req. Date</label>
+                      <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Req. Date <span className="text-rose-500">*</span></label>
                       <input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-white" />
                     </div>
                   )}
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Manager</label>
+                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Manager <span className="text-rose-500">*</span></label>
                     <SearchableSelect
                       options={masterData.managers.map(m => ({ value: m.name, label: m.name }))}
                       value={formData.manager}
@@ -1354,7 +1360,7 @@ export default function LeaveRequest() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Manager ID</label>
+                    <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Manager ID <span className="text-rose-500">*</span></label>
                     <input readOnly type="text" value={formData.managerId} className="w-full bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 font-medium" />
                   </div>
                 </div>
@@ -1362,7 +1368,7 @@ export default function LeaveRequest() {
                 {/* Remarks */}
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">
-                    Reason / Remarks {formData.type === 'Weekoff Request' && <span className="text-[8px] opacity-60 lowercase font-normal text-slate-400 ml-1">(Optional)</span>}
+                    Reason / Remarks {formData.type === 'Weekoff Request' ? <span className="text-[8px] opacity-60 lowercase font-normal text-slate-400 ml-1">(Optional)</span> : <span className="text-rose-500 ml-1">*</span>}
                   </label>
                   <textarea
                     required={formData.type !== 'Weekoff Request'}
@@ -1377,7 +1383,7 @@ export default function LeaveRequest() {
                 {/* Proof Attachment */}
                 {formData.type === 'Punchmiss Request' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest px-0.5">Proof Attachment</label>
+                    <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest px-0.5">Proof Attachment <span className="text-rose-500">*</span></label>
                     <div
                       onClick={() => fileInputRef.current.click()}
                       className="border-2 border-dashed border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-sky-50 hover:border-sky-200 transition-all group bg-white"

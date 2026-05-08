@@ -48,6 +48,26 @@ body {
   scrollbar-width: none;
 }
 
+.hide-scrollbar-y::-webkit-scrollbar {
+  width: 0px; /* Hide vertical scrollbar */
+  height: 6px; /* Show horizontal scrollbar */
+}
+
+.hide-scrollbar-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hide-scrollbar-y::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.hide-scrollbar-y {
+  /* Firefox doesn't support hiding just Y, so we use auto but with thin width, or just live with it */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
 /* Typography Overrides */
 .text-navy { color: var(--primary-navy); }
 .bg-navy { background-color: var(--primary-navy); }
