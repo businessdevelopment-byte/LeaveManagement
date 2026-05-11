@@ -440,7 +440,6 @@ export default function Setting() {
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm text-slate-600">Gmail</label>
                     <input
-                      required
                       type="email"
                       placeholder="Email address"
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
