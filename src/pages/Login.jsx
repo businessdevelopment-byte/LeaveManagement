@@ -69,9 +69,15 @@ const Login = () => {
         const row = data[i];
         const rowName = String(row[2] || '').trim(); // C — Name
         const rowMobile = String(row[3] || '').trim(); // D — Mobile
+        const rowGmail = String(row[4] || '').trim(); // E — Gmail
         const rowDesignation = String(row[5] || '').trim(); // F — Designation
-        const rowLoginId = String(row[6] || '').trim(); // G — Login ID
-        const rowPass = String(row[7] || '').trim(); // H — Password
+        let rowLoginId = String(row[6] || '').trim(); // G — Login ID
+        let rowPass = String(row[7] || '').trim(); // H — Password
+
+        // Strip leading quote if present
+        if (rowLoginId.startsWith("'")) rowLoginId = rowLoginId.slice(1);
+        if (rowPass.startsWith("'")) rowPass = rowPass.slice(1);
+
         const rowRole = String(row[8] || '').trim(); // I — Role
 
         // Match: Login ID = Column G, Password = Column H
@@ -81,7 +87,9 @@ const Login = () => {
             username: rowLoginId,     // shown as ID in header
             employeeCode: rowLoginId,     // used for leave request filtering
             mobile: rowMobile,      // pre-fill form
+            gmail: rowGmail,
             designation: rowDesignation, // pre-fill form
+            pass: rowPass,
             role: rowRole.toUpperCase(),
           };
           break;

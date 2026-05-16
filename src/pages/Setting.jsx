@@ -58,12 +58,12 @@ export default function Setting() {
             contactNo: String(r[3] || ''),  // D
             gmail: String(r[4] || ''),  // E
             designation: String(r[5] || ''), // F
-            userId: String(r[6] || ''),  // G — Login ID
-            employeeCode: String(r[6] || ''), // G — Employee Code
-            pass: String(r[7] || ''),  // H
+            userId: String(r[6] || '').startsWith("'") ? String(r[6]).slice(1) : String(r[6] || ''),  // G — Login ID
+            employeeCode: String(r[6] || '').startsWith("'") ? String(r[6]).slice(1) : String(r[6] || ''), // G — Employee Code
+            pass: String(r[7] || '').startsWith("'") ? String(r[7]).slice(1) : String(r[7] || ''),  // H
             role: String(r[8] || 'User'), // I
           }));
-        setUsers(list);
+        setUsers(list.reverse());
       }
     } catch (e) {
       toast.error('Failed to load users');
@@ -112,7 +112,8 @@ export default function Setting() {
       let body;
       if (editUser) {
         // A=ts(keep), B=sn(keep), C=Name, D=Contact, E=Gmail, F=Desig, G=LoginID, H=Pass, I=Role
-        const rowData = ['', '', formData.name, formData.contactNo, formData.gmail, formData.designation, formData.userId, formData.pass, formData.role];
+        // Use ' prefix to preserve leading zeros in Google Sheets
+        const rowData = ['', '', formData.name, formData.contactNo, formData.gmail, formData.designation, `'${formData.userId}`, `'${formData.pass}`, formData.role];
         body = new URLSearchParams({
           action: 'update',
           sheetName: LOGIN_SHEET,
@@ -122,7 +123,8 @@ export default function Setting() {
       } else {
         const sn = `SN-${String(users.length + 1).padStart(3, '0')}`;
         // A=ts, B=sn, C=Name, D=Contact, E=Gmail, F=Desig, G=LoginID, H=Pass, I=Role
-        const rowData = [ts, sn, formData.name, formData.contactNo, formData.gmail, formData.designation, formData.userId, formData.pass, formData.role];
+        // Use ' prefix to preserve leading zeros in Google Sheets
+        const rowData = [ts, sn, formData.name, formData.contactNo, formData.gmail, formData.designation, `'${formData.userId}`, `'${formData.pass}`, formData.role];
         body = new URLSearchParams({
           action: 'insert',
           sheetName: LOGIN_SHEET,
@@ -484,7 +486,7 @@ export default function Setting() {
 
                 <div className="space-y-1 sm:space-y-1.5">
                   <label className="text-xs sm:text-sm text-slate-600">User Role</label>
-                  {editUser ? (
+                  {editUser && user?.role !== 'SUPER ADMIN' ? (
                     <input readOnly value={formData.role} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-slate-500 cursor-not-allowed font-medium" />
                   ) : (
                     <select

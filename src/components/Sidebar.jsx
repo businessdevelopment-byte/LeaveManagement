@@ -23,6 +23,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const isSuperAdmin = user?.role === 'SUPER ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
 
   const menuItems = [
     { path: '/leave-request', icon: Plus, label: 'Leave Request' },
@@ -30,9 +31,9 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   if (isSuperAdmin) {
     menuItems.push({ path: '/setting', icon: Settings, label: 'Setting' });
-  } else {
-    menuItems.push({ path: '/my-profile', icon: User, label: 'My Profile' });
   }
+  
+  menuItems.push({ path: '/my-profile', icon: User, label: 'My Profile' });
 
   return (
     <>

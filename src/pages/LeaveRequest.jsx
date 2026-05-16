@@ -20,7 +20,7 @@ import {
 
 import { useAuthStore } from '../store/authStore';
 
-const REQUEST_TYPES = ['Leave Request', 'WFH Request', 'Punchmiss Request', 'Weekoff Request'];
+const REQUEST_TYPES = ['Leave Request', 'WFH Request', 'Punchmiss Request', 'Weekoff Request', 'Half-Day Request'];
 
 // Robust date formatter for UI display (DD/MM/YYYY)
 const formatUIDate = (dateStr) => {
@@ -47,6 +47,20 @@ const toInputDate = (dateStr) => {
   if (ddMatch) return `${ddMatch[3]}-${ddMatch[2]}-${ddMatch[1]}`;
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
   return '';
+};
+
+// Convert 24h time (HH:MM) to 12h time (HH:MM AM/PM)
+const formatTimeTo12h = (timeStr) => {
+  if (!timeStr || timeStr === '-') return '-';
+  if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr; // Already formatted
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0]);
+  const m = parts[1];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12; // the hour '0' should be '12'
+  return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
 };
 
 // Reusable Searchable Select Component
@@ -207,6 +221,7 @@ export default function LeaveRequest() {
     remarks: '',
     manager: '',
     managerId: '',
+    punchMissTime: '',
     proof: null,
     proofPreview: ''
   });
@@ -263,7 +278,8 @@ export default function LeaveRequest() {
               proofUrl: String(r[13] || ''), // N
               status: isPending ? 'PENDING' : String(r[17] || ''), // R
               approverRemarks: String(r[19] || ''), // T
-              approvedName: String(r[18] || '')     // S — Approver name
+              approvedName: String(r[18] || ''),     // S — Approver name
+              punchMissTime: formatTimeTo12h(String(r[20] || ''))     // U — Punch miss time
             });
           }
         });
@@ -574,6 +590,7 @@ export default function LeaveRequest() {
       remarks: '',
       manager: '',
       managerId: '',
+      punchMissTime: '',
       proof: null,
       proofPreview: ''
     });
@@ -630,10 +647,11 @@ export default function LeaveRequest() {
       const pad = (n) => n.toString().padStart(2, '0');
       const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-      const finalFrom = (formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request') ? formData.date : formData.fromDate;
+      const finalFrom = (formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request' || formData.type === 'Half-Day Request') ? formData.date : formData.fromDate;
 
-      const finalTo = (formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request') ? '-' : formData.toDate;
-      const finalDays = (formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request') ? '-' : formData.days;
+      const finalTo = (formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request' || formData.type === 'Half-Day Request') ? '-' : formData.toDate;
+      const finalDays = (formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request' || formData.type === 'Half-Day Request') ? '-' : formData.days;
+      const finalTime = formData.type === 'Punchmiss Request' ? formatTimeTo12h(formData.punchMissTime) : '-';
 
       const scriptUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT;
       let fileUrl = '';
@@ -658,7 +676,8 @@ export default function LeaveRequest() {
       // Columns A–N only; Column O is NOT written by the frontend
       const newRequestRow = [
         ts, '', formData.type, formData.employeeId, formData.userName, formData.designation, formData.mobile,
-        finalFrom, finalTo, finalDays, formData.manager, formData.managerId, formData.remarks, fileUrl
+        finalFrom, finalTo, finalDays, formData.manager, formData.managerId, formData.remarks, fileUrl,
+        '', '', '', '', '', '', finalTime // U = index 20
       ];
 
 
@@ -682,7 +701,8 @@ export default function LeaveRequest() {
         proofUrl: fileUrl,
         status: 'PENDING',
         approverRemarks: '',
-        approvedName: ''
+        approvedName: '',
+        punchMissTime: finalTime
       };
 
       setRequests(prev => [optimisticNewReq, ...prev]);
@@ -930,6 +950,12 @@ export default function LeaveRequest() {
                       <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Manager</span>
                       <span className="text-[10px] text-slate-700 font-medium truncate">{req.manager}</span>
                     </div>
+                    {req.type === 'Punchmiss Request' && req.punchMissTime && (
+                      <div className="flex flex-col col-span-3 border-t border-slate-200 mt-1 pt-1">
+                        <span className="text-[8px] text-sky-600 font-bold uppercase tracking-widest mb-0.5">Punch miss time</span>
+                        <span className="text-[10px] font-bold text-sky-700">{req.punchMissTime}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Dates Section */}
@@ -1020,7 +1046,7 @@ export default function LeaveRequest() {
                           </div>
                         </div>
                       ) : (
-                        /* Punchmiss / Weekoff → single Date only */
+                        /* Punchmiss / Weekoff / Half-Day → single Date only */
                         <div className="flex gap-2 items-center">
                           <div className="flex-1 flex flex-col">
                             <span className="text-[7px] text-sky-600 font-semibold uppercase mb-0.5">Date</span>
@@ -1071,6 +1097,7 @@ export default function LeaveRequest() {
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Mobile No</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">From</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">To</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Miss Time</th>
                     <th className="px-4 py-3 text-center text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Days</th>
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Remarks</th>
                     <th className="px-4 py-3 text-center text-[11px] font-semibold text-slate-700 uppercase tracking-widest whitespace-nowrap">Proof</th>
@@ -1176,6 +1203,9 @@ export default function LeaveRequest() {
                             <span className="text-[11px] text-slate-400 italic">—</span>
                           )
                         ) : formatUIDate(req.to)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-sky-700 whitespace-nowrap font-bold">
+                        {req.type === 'Punchmiss Request' ? (req.punchMissTime || '-') : '-'}
                       </td>
                       <td className="px-4 py-3 text-center text-sm text-sky-600 whitespace-nowrap">
                         {activeTab === 'pending' && selectedRows.includes(req.id) && isAdmin ? (
@@ -1342,10 +1372,23 @@ export default function LeaveRequest() {
                     </>
                   )}
 
-                  {(formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request') && (
+                  {(formData.type === 'Punchmiss Request' || formData.type === 'Weekoff Request' || formData.type === 'Half-Day Request') && (
                     <div className="flex flex-col gap-1">
                       <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Req. Date <span className="text-rose-500">*</span></label>
                       <input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-white" />
+                    </div>
+                  )}
+
+                  {formData.type === 'Punchmiss Request' && (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] text-slate-500 font-medium uppercase tracking-wider px-0.5">Punch miss time <span className="text-rose-500">*</span></label>
+                      <input 
+                        required 
+                        type="time" 
+                        value={formData.punchMissTime} 
+                        onChange={(e) => setFormData({ ...formData, punchMissTime: e.target.value })} 
+                        className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 bg-white" 
+                      />
                     </div>
                   )}
 
